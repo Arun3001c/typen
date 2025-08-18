@@ -1,0 +1,185 @@
+practice the commands in cmdchallenge.com website
+
+here are some basic commands
+e: --this is used for to change drive.
+cd .. --used for changing path
+cd it tells the path as pwd
+echo %path% it prints path of system variable
+cd letter+tab
+tree
+net user
+dir /?
+dir /s for searching
+mkdir folder name
+rmdir folder name
+rmdir /s folder name used to when the directry contains some things
+cd ../..
+type nul>file name
+del file name
+copy file name address name
+xcopy used to copy all files
+xcopy /s file name addess name
+ipconfig
+attrib
+color
+wmic logicaldisk get name(Windows Management Instrumentation Command-line)
+powercfg
+winget(used to install apps using cli)
+
+start .(for taking from terminal to file explorer)
+code .(for vs code)
+cmd .(for taking from file explorer to terminal type in path place)
+
+diskpart(used for removing an operating system from pen drives)
+
+
+
+What are some common command line interface commands?
+A command line interface (CLI) has many different commands for different types of tasks. The commands vary slightly between operating systems. We give several different command examples next.
+
+File system commands
+CLI command
+
+Windows
+
+Linux
+
+Change directory
+
+cd
+
+cd
+
+Last files
+
+dir
+
+ls
+
+Create directory
+
+mkdir
+
+mkdir
+
+Remove directory
+
+rmdir
+
+rmdir
+
+Copy files
+
+copy
+
+cp
+
+Move files
+
+move
+
+mv
+
+Remane files
+
+ren
+
+mv
+
+Display files
+
+type
+
+cat
+
+Delete files
+
+del
+
+rm
+
+Change personmissions
+
+cacls/chmod
+
+chmod
+
+Network commands
+CLI command
+
+Windows
+
+Linux
+
+Ping
+
+ping
+
+ping
+
+Traceroute
+
+tracert
+
+traceroute
+
+Network config
+
+ipconfig
+
+ifconfig
+
+Route table
+
+route
+
+route
+
+DNS lookup
+
+nslookup
+
+nslookup
+
+Network diagnostics
+
+netsh
+
+netstat
+
+Information commands
+CLI command
+
+Windows
+
+Linux
+
+List processes
+
+tasklist
+
+ps
+
+End process
+
+taskkill
+
+kill
+
+System info
+
+systeminfo
+
+uname -a
+
+Disk usage
+
+wmic/fsutil
+
+df
+
+System monitoring
+
+perfmon
+
+top/htop
