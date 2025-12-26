@@ -1,9 +1,0 @@
-
-
-1 first create a repo in git hub account
-2 next git init
-3 git remote add origin <url>
-4 git add .
-5 git commit -m "commit message"
-6 git push
-7 completed.
