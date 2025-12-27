@@ -1,28 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/landingpage.css'
-// Icons
-const Check = () => <span className="icon-check">✓</span>;
-const MessageSquare = () => <span className="icon-message-square">💬</span>;
-const Layers = () => <span className="icon-layers">📚</span>;
-const FileText = () => <span className="icon-file-text">📄</span>;
-const Palette = () => <span className="icon-palette">🎨</span>;
-const Sparkles = () => <span className="icon-sparkles">✨</span>;
-const PenTool = () => <span className="icon-pen-tool">✏️</span>;
-const Users = () => <span className="icon-users">👥</span>;
-const Lightbulb = () => <span className="icon-lightbulb">💡</span>;
+import '../styles/landingpage.css';
+
+// Icons as React components
+const Check = () => <span className="icon">✓</span>;
+const Zap = () => <span className="icon">⚡</span>;
+const Brain = () => <span className="icon">🧠</span>;
+const Clock = () => <span className="icon">⏰</span>;
+const Globe = () => <span className="icon">🌐</span>;
+const Sparkles = () => <span className="icon">✨</span>;
+const PenTool = () => <span className="icon">✏️</span>;
+const Users = () => <span className="icon">👥</span>;
+const Lightbulb = () => <span className="icon">💡</span>;
+const Palette = () => <span className="icon">🎨</span>;
 
 // Typen Logo Component
-// const TypenLogo = () => (
-//   <div className="typen-logo">
-//     <div className="logo-circle"></div>
-//     <span className="logo-text">t</span>
-//   </div>
-// );
+const TypenLogo = () => (
+  <div className="logo-container">
+    <div className="logo-icon">
+      <img src="./logo.svg" alt="icon" />
+    </div>
+    <span className="logo-text">Typen</span>
+  </div>
+);
 
 // DemoInput Component
 const DemoInput = () => {
   const placeholderTexts = [
-    "Write me a blog post about launching...",
+    "Once upon a time there was a brave knight...",
     "Draft an email to my subscribers about...",
     "Create a product description for...",
     "Help me write a compelling headline for...",
@@ -59,7 +63,7 @@ const DemoInput = () => {
   }, [charIndex, isDeleting, textIndex]);
 
   return (
-    <section className="demo-input-section">
+    <section className="demo-input">
       <div className="container">
         <div className="demo-card">
           <div className="demo-text-container">
@@ -75,7 +79,7 @@ const DemoInput = () => {
               <span>Styles</span>
             </button>
             
-            <button className="primary-button">
+            <button className="accent-button">
               Start writing
             </button>
           </div>
@@ -87,70 +91,67 @@ const DemoInput = () => {
 
 // Features Component
 const Features = () => {
-  const principles = [
-    "I won't make anything up",
-    "I won't use AI-isms",
-    "I won't ask rhetorical questions",
-    "I will use concrete, specific details",
-    "I will use the active voice",
-    "I will save the punch-line for last",
+  const benefits = [
+    "Save hours of writing time daily",
+    "Never stare at a blank screen again",
+    "Maintain your natural writing flow",
+    "Context-aware predictions",
+    "Works offline after initial load",
+    "No subscription required",
   ];
 
   const featureCards = [
     {
-      icon: MessageSquare,
-      title: "typen interviews you",
-      description: "typen asks targeted questions that clarify your thinking",
-      example: "What makes someone choose typen over just using ChatGPT?",
-      answer: "Other tools just generate. typen works with you—asking questions, clarifying your thinking, making sure you capture what you actually mean.",
+      icon: Brain,
+      title: "LSTM Deep Learning",
+      description: "Powered by Long Short-Term Memory neural networks that understand context and predict your next words with remarkable accuracy.",
+      highlight: "Advanced AI that learns patterns in language to suggest what comes next.",
     },
     {
-      icon: Layers,
-      title: "Drafts for every angle",
-      description: "typen shows you multiple angles so you can pick the direction that resonates, then chisel it to perfection.",
-      angles: ["Benefit-Driven Angle", "Creative Angle", "Productivity-Focused Angle"],
+      icon: Clock,
+      title: "Save Precious Time",
+      description: "Stop spending hours searching for the right words. typen predicts your next words instantly, letting you focus on ideas instead of typing.",
+      stats: ["faster writing", "Less mental fatigue", "More creative energy"],
     },
     {
-      icon: FileText,
-      title: "typen is grounded",
-      description: "Feed typen your files and context on whatever you're writing about. typen pulls from your material—facts, not hallucinations.",
+      icon: Globe,
+      title: "Online Web Application",
+      description: "Access typen from any device with a browser. No downloads, no installations—just open and start writing with AI-powered predictions.",
     },
     {
-      icon: Palette,
-      title: "Write in your own style",
-      description: "Share examples of your writing, your brand's voice, or favorite writers. typen matches that style.",
+      icon: Sparkles,
+      title: "User-Friendly Interface",
+      description: "Clean, distraction-free writing environment designed for authors, bloggers, and content creators. Your words, enhanced by AI.",
     },
   ];
 
   return (
-    <section className="features-section">
+    <section className="features">
       <div className="container">
         <div className="features-header">
           <h2>
-            <span className="italic">typen</span> writes with taste.
+            Stop wasting time on <span className="accent-text italic">every word</span>.
           </h2>
           <p className="subtitle">
-            typen writes with natural rhythm, concrete details, and clear language—good taste built in from the start.
+            Traditional editors leave you typing every single letter. typen uses LSTM deep learning to predict your next words—so you write faster and think clearer.
           </p>
 
-          <div className="principles-card">
-            <div className="principles-content">
-              <p className="principles-label">Writing with typen</p>
-              <p className="principles-quote">Thinking about writing taste...</p>
+          <div className="benefits-card">
+            <div className="benefits-content">
+              <p className="benefits-label">Why writers love typen</p>
+              <p className="benefits-quote">Intelligent predictions, effortless writing...</p>
               
-              <div className="principles-list">
-                {principles.map((principle, index) => (
+              <div className="benefits-list">
+                {benefits.map((benefit, index) => (
                   <div 
-                    key={principle}
-                    className="principle-item fade-up"
-                    style={{ 
-                      animationDelay: `${index * 0.1}s`, 
-                    }}
+                    key={benefit}
+                    className="benefit-item fade-up"
+                    style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <div className="principle-check">
+                    <div className="benefit-check">
                       <Check />
                     </div>
-                    <span>{principle}</span>
+                    <span>{benefit}</span>
                   </div>
                 ))}
               </div>
@@ -159,7 +160,7 @@ const Features = () => {
         </div>
 
         <div className="features-grid">
-          {featureCards.map((feature, index) => (
+          {featureCards.map((feature) => (
             <div 
               key={feature.title}
               className="feature-card"
@@ -173,25 +174,20 @@ const Features = () => {
                 {feature.description}
               </p>
 
-              {feature.example && (
-                <div className="feature-example">
-                  <p className="example-question">
-                    "{feature.example}"
-                  </p>
-                  <p className="example-answer">
-                    {feature.answer}
-                  </p>
+              {feature.highlight && (
+                <div className="feature-highlight">
+                  <p>{feature.highlight}</p>
                 </div>
               )}
 
-              {feature.angles && (
-                <div className="angles-container">
-                  {feature.angles.map((angle) => (
+              {feature.stats && (
+                <div className="stats-container">
+                  {feature.stats.map((stat) => (
                     <span 
-                      key={angle}
-                      className="angle-pill"
+                      key={stat}
+                      className="stat-pill"
                     >
-                      {angle}
+                      {stat}
                     </span>
                   ))}
                 </div>
@@ -212,12 +208,23 @@ const Footer = () => {
         <div className="footer-content">
           <div className="footer-logo">
             <TypenLogo />
-            <span className="footer-logo-text">typen</span>
           </div>
           
-          <p className="footer-copyright">
+          {/* <p className="footer-copyright">
             © {new Date().getFullYear()} typen. All rights reserved.
-          </p>
+          </p> */}
+            <div className="dev-team">
+            {/* <p className="footer-description">Developed by</p> */}
+            <div className="dev-links">
+              <span>Developed by</span>
+                  <a href="https://www.linkedin.com/in/pallavi-motamarri-3350b226a/" target="_blank">👩‍💻 Pallavi</a>
+                  <span>|</span>
+                  <a href="https://www.linkedin.com/in/venkatesh-mamidala-17b38426a/" target="_blank">👨‍💻 Venky</a>
+                  <a href="https://www.linkedin.com/in/nivas-sharma-77441b362/" target="_blank">👨‍💻 Nivas</a>
+                  <span>|</span>
+                  <a href="https://github.com/Arun3001c" target="_blank">👨‍💻 Arun</a>
+            </div>
+          </div>
           
           <div className="footer-links">
             <a href="#" className="footer-link">
@@ -229,6 +236,7 @@ const Footer = () => {
             <a href="#" className="footer-link">
               Contact
             </a>
+            
           </div>
         </div>
       </div>
@@ -242,11 +250,12 @@ const Header = () => {
     <header className="header">
       <div className="container header-container">
         <div className="header-logo">
-          {/* <TypenLogo /> */}
-          <span className="header-logo-text">typen</span>
+          <TypenLogo />
+          {/* <img src="/images/icon.svg" alt="icon" /> */}
+
         </div>
         
-        <button className="primary-button">
+        <button className="accent-button">
           Start writing
         </button>
       </div>
@@ -280,7 +289,7 @@ const Hero = () => {
   ];
 
   return (
-    <section className="hero-section">
+    <section className="hero">
       <div className="container">
         <h1 className="fade-up" style={{ animationDelay: "0.1s" }}>
           The Next Word
@@ -329,8 +338,8 @@ const LandingPage = () => {
     <div className="landing-page">
       <Header />
       <main>
-        <Hero />
         <DemoInput />
+        <Hero />
         <Features />
       </main>
       <Footer />

@@ -1,9 +1,9 @@
-import React from 'react'
-import LandingPage from './components/landingpage'
-import './styles/landingpage.css'
+import React from 'react';
+import LandingPage from './components/landingpage';
+import '../src/styles/landingpage.css';
 
 function App() {
-  return <LandingPage />
+  return <LandingPage />;
 }
 
-export default App
+export default App;
