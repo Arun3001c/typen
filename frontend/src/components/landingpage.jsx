@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/landingpage.css';
 
 // Icons as React components
@@ -25,6 +26,7 @@ const TypenLogo = () => (
 
 // DemoInput Component
 const DemoInput = () => {
+  const navigate = useNavigate();
   const placeholderTexts = [
     "Once upon a time there was a brave knight...",
     "Draft an email to my subscribers about...",
@@ -79,7 +81,7 @@ const DemoInput = () => {
               <span>Styles</span>
             </button>
             
-            <button className="accent-button">
+            <button className="accent-button" onClick={() => navigate('/login')}>
               Start writing
             </button>
           </div>
@@ -246,6 +248,13 @@ const Footer = () => {
 
 // Header Component
 const Header = () => {
+  const navigate = useNavigate();
+
+  // Handle Start Writing button - redirects to login
+  const handleStartWriting = () => {
+    navigate('/login');
+  };
+
   return (
     <header className="header">
       <div className="container header-container">
@@ -255,7 +264,7 @@ const Header = () => {
 
         </div>
         
-        <button className="accent-button">
+        <button className="accent-button" onClick={handleStartWriting}>
           Start writing
         </button>
       </div>
@@ -265,9 +274,15 @@ const Header = () => {
 
 // Hero Component
 const Hero = () => {
+  const navigate = useNavigate();
   const rotatingWords = ["Writers", "Creators", "Thinkers", "Dreamers"];
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // Handle Start Writing button - redirects to login
+  const handleStartWriting = () => {
+    navigate('/login');
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -323,7 +338,7 @@ const Hero = () => {
         </div>
 
         <div className="hero-button-container fade-up" style={{ animationDelay: "0.9s" }}>
-          <button className="hero-button">
+          <button className="hero-button" onClick={handleStartWriting}>
             Start writing
           </button>
         </div>
