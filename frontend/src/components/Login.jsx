@@ -12,6 +12,8 @@ import {
     useUser, 
     useAuth 
 } from '@clerk/clerk-react';
+import { useLoading } from '../context/LoadingContext';
+import { Loading } from './loading';
 import '../styles/login.css';
 
 const Login = () => {
@@ -21,6 +23,9 @@ const Login = () => {
     // Clerk hooks to check if user is signed in
     const { isSignedIn, user, isLoaded } = useUser();
     const { getToken } = useAuth();
+    
+    // Loading context for global loading state
+    const { showLoader, hideLoader } = useLoading();
 
     // State to toggle between Sign In and Sign Up
     const [isSignUp, setIsSignUp] = React.useState(false);
@@ -57,6 +62,9 @@ const Login = () => {
     useEffect(() => {
         const saveUserToDatabase = async () => {
             if (isSignedIn && user) {
+                // Show loading while saving user data
+                showLoader('Setting up your account...');
+                
                 try {
                     // Prepare user data to send to backend
                     const userData = {
@@ -79,17 +87,14 @@ const Login = () => {
                     
                     if (result.status === 'success') {
                         console.log('User saved to database:', result.message);
-                        // Redirect to dashboard after successful registration/login
-                        navigate('/dashboard');
                     } else {
                         console.error('Error saving user:', result.message);
-                        // Still redirect to dashboard even if save fails
-                        // (user might already exist)
-                        navigate('/dashboard');
                     }
                 } catch (error) {
                     console.error('Error connecting to backend:', error);
-                    // Redirect to dashboard anyway
+                } finally {
+                    // Hide loader and redirect to dashboard
+                    hideLoader();
                     navigate('/dashboard');
                 }
             }
@@ -99,18 +104,11 @@ const Login = () => {
         if (isLoaded && isSignedIn) {
             saveUserToDatabase();
         }
-    }, [isSignedIn, user, isLoaded, navigate]);
+    }, [isSignedIn, user, isLoaded, navigate, showLoader, hideLoader]);
 
     // Show loading state while Clerk is loading
     if (!isLoaded) {
-        return (
-            <div className="login-container">
-                <div className="loading-spinner">
-                    <div className="spinner"></div>
-                    <p>Loading...</p>
-                </div>
-            </div>
-        );
+        return <Loading fullScreen={true} message="Loading authentication..." />;
     }
 
     return (
