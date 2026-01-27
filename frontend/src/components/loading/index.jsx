@@ -5,3 +5,4 @@
 
 export { default as Loading } from './Loading';
 export { default as GlobalLoader } from './GlobalLoader';
+export { default as BookLoader } from './Loading_book';

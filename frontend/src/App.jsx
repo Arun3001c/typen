@@ -14,7 +14,9 @@ import './styles/landingpage.css';
 // Lazy load components for better performance
 const LandingPage = lazy(() => import('./components/landingpage'));
 const Login = lazy(() => import('./components/Login'));
-const Dashboard = lazy(() => import('./components/Dashboard'));
+const Dashboard = lazy(() => import('./components/Dashboard/Dashboard'));
+const Editor = lazy(() => import('./components/Dashboard/Editor'));
+const Profile = lazy(() => import('./components/Dashboard/profile'));
 
 /**
  * RouteChangeHandler Component
@@ -59,6 +61,13 @@ const AppRoutes = () => {
 
                     {/* Dashboard - Protected route (after login) */}
                     <Route path="/dashboard" element={<Dashboard />} />
+
+                    {/* Editor - Protected route (after login) */}
+                    <Route path="/editor" element={<Editor />} />
+                    <Route path="/editor/:id" element={<Editor />} />
+
+                    {/* Profile - Protected route (after login) */}
+                    <Route path="/profile" element={<Profile />} />
                 </Routes>
             </RouteChangeHandler>
         </Suspense>
