@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser, useClerk } from '@clerk/clerk-react';
-import { useLoading } from '../../context/LoadingContext';
+import { useLoading, LOADER_TYPES } from '../../context/LoadingContext';
 import { Loading } from '../loading';
 import { X, Image } from 'lucide-react';
 import '../../styles/dashboard.css';
@@ -287,6 +287,8 @@ const Dashboard = () => {
 
             if (data.status === 'success') {
                 setIsModalOpen(false);
+                // Show book loader before navigating to editor
+                showLoader('Opening your book...', LOADER_TYPES.BOOK);
                 // Navigate to editor with the new book ID
                 navigate(`/editor/${data.book.id}`);
             } else {
@@ -302,6 +304,7 @@ const Dashboard = () => {
 
     // Handle opening existing book
     const handleOpenBook = (bookId) => {
+        showLoader('Opening your book...', LOADER_TYPES.BOOK);
         navigate(`/editor/${bookId}`);
     };
 

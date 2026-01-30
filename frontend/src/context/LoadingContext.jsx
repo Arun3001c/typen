@@ -24,6 +24,12 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 // Create the context
 const LoadingContext = createContext(null);
 
+// Loader types
+export const LOADER_TYPES = {
+    PENCIL: 'pencil',
+    BOOK: 'book'
+};
+
 /**
  * LoadingProvider Component
  * Wraps the application and provides loading state management
@@ -32,13 +38,16 @@ export const LoadingProvider = ({ children }) => {
     // Loading state
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
+    const [loaderType, setLoaderType] = useState(LOADER_TYPES.PENCIL);
 
     /**
-     * Show the loader with an optional message
+     * Show the loader with an optional message and type
      * @param {string} message - Optional message to display
+     * @param {string} type - Loader type ('pencil' or 'book')
      */
-    const showLoader = useCallback((message = '') => {
+    const showLoader = useCallback((message = '', type = LOADER_TYPES.PENCIL) => {
         setLoadingMessage(message);
+        setLoaderType(type);
         setIsLoading(true);
     }, []);
 
@@ -48,25 +57,30 @@ export const LoadingProvider = ({ children }) => {
     const hideLoader = useCallback(() => {
         setIsLoading(false);
         setLoadingMessage('');
+        setLoaderType(LOADER_TYPES.PENCIL);
     }, []);
 
     /**
      * Set loading state directly
      * @param {boolean} loading - Loading state
      * @param {string} message - Optional message
+     * @param {string} type - Loader type ('pencil' or 'book')
      */
-    const setLoading = useCallback((loading, message = '') => {
+    const setLoading = useCallback((loading, message = '', type = LOADER_TYPES.PENCIL) => {
         setIsLoading(loading);
         setLoadingMessage(message);
+        setLoaderType(type);
     }, []);
 
     // Context value - memoized to prevent unnecessary re-renders
     const value = {
         isLoading,
         loadingMessage,
+        loaderType,
         setLoading,
         showLoader,
-        hideLoader
+        hideLoader,
+        LOADER_TYPES
     };
 
     return (
