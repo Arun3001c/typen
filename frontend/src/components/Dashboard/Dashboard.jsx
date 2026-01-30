@@ -4,18 +4,18 @@
  * Fetches books from database and allows creating new ones
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import { useLoading, LOADER_TYPES } from '../../context/LoadingContext';
 import { Loading } from '../loading';
-import { X, Image } from 'lucide-react';
+import { X, Image, Edit2, Trash2, MoreVertical, Star } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // New Document Modal Component
-const NewDocumentModal = ({ isOpen, onClose, onSubmit, isSubmitting }) => {
+const NewDocumentModal = ({ isOpen, onClose, onSubmit, isSubmitting, editingBook = null }) => {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -23,6 +23,22 @@ const NewDocumentModal = ({ isOpen, onClose, onSubmit, isSubmitting }) => {
         coverImage: ''
     });
     const [imagePreview, setImagePreview] = useState(null);
+
+    // Populate form when editing
+    useEffect(() => {
+        if (editingBook) {
+            setFormData({
+                title: editingBook.title || '',
+                description: editingBook.description || '',
+                genre: editingBook.genre || '',
+                coverImage: editingBook.coverImage || ''
+            });
+            setImagePreview(editingBook.coverImage || null);
+        } else {
+            setFormData({ title: '', description: '', genre: '', coverImage: '' });
+            setImagePreview(null);
+        }
+    }, [editingBook, isOpen]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -67,7 +83,7 @@ const NewDocumentModal = ({ isOpen, onClose, onSubmit, isSubmitting }) => {
         <div className="modal-overlay" onClick={handleClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>Create New Book</h2>
+                    <h2>{editingBook ? 'Edit Book Details' : 'Create New Book'}</h2>
                     <button className="modal-close-btn" onClick={handleClose}>
                         <X size={20} />
                     </button>
@@ -168,7 +184,7 @@ const NewDocumentModal = ({ isOpen, onClose, onSubmit, isSubmitting }) => {
                             Cancel
                         </button>
                         <button type="submit" className="btn-primary" disabled={isSubmitting}>
-                            {isSubmitting ? 'Creating...' : 'Start Writing'}
+                            {isSubmitting ? (editingBook ? 'Saving...' : 'Creating...') : (editingBook ? 'Save Changes' : 'Start Writing')}
                         </button>
                     </div>
                 </form>
@@ -196,6 +212,25 @@ const Dashboard = () => {
     // State for new document modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [editingBook, setEditingBook] = useState(null);
+
+    // State for book menu dropdown
+    const [openMenuId, setOpenMenuId] = useState(null);
+    const menuRef = useRef(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setOpenMenuId(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     // Redirect to login if not authenticated
     useEffect(() => {
@@ -269,37 +304,134 @@ const Dashboard = () => {
     const handleCreateBook = async (formData) => {
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${API_URL}/api/books`, {
-                method: 'POST',
+            // If editing, update the book
+            if (editingBook) {
+                const response = await fetch(`${API_URL}/api/books/${editingBook.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: formData.title,
+                        description: formData.description,
+                        genre: formData.genre,
+                        coverImage: formData.coverImage
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    setIsModalOpen(false);
+                    setEditingBook(null);
+                    fetchBooks(); // Refresh the list
+                } else {
+                    alert('Failed to update book: ' + data.message);
+                }
+            } else {
+                // Create new book
+                const response = await fetch(`${API_URL}/api/books`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userId: user.id,
+                        title: formData.title,
+                        description: formData.description,
+                        genre: formData.genre,
+                        coverImage: formData.coverImage
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    setIsModalOpen(false);
+                    // Show book loader before navigating to editor
+                    showLoader('Opening your book...', LOADER_TYPES.BOOK);
+                    // Navigate to editor with the new book ID
+                    navigate(`/editor/${data.book.id}`);
+                } else {
+                    alert('Failed to create book: ' + data.message);
+                }
+            }
+        } catch (error) {
+            console.error('Error saving book:', error);
+            alert('Failed to save book. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Handle edit book
+    const handleEditBook = (book, e) => {
+        e.stopPropagation();
+        setOpenMenuId(null);
+        setEditingBook(book);
+        setIsModalOpen(true);
+    };
+
+    // Handle toggle favorite
+    const handleToggleFavorite = async (book, e) => {
+        e.stopPropagation();
+        setOpenMenuId(null);
+        
+        try {
+            const response = await fetch(`${API_URL}/api/books/${book.id}`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    userId: user.id,
-                    title: formData.title,
-                    description: formData.description,
-                    genre: formData.genre,
-                    coverImage: formData.coverImage
+                    isFavorite: !book.isFavorite
                 }),
             });
 
             const data = await response.json();
 
             if (data.status === 'success') {
-                setIsModalOpen(false);
-                // Show book loader before navigating to editor
-                showLoader('Opening your book...', LOADER_TYPES.BOOK);
-                // Navigate to editor with the new book ID
-                navigate(`/editor/${data.book.id}`);
+                fetchBooks(); // Refresh the list
             } else {
-                alert('Failed to create book: ' + data.message);
+                alert('Failed to update favorite status');
             }
         } catch (error) {
-            console.error('Error creating book:', error);
-            alert('Failed to create book. Please try again.');
-        } finally {
-            setIsSubmitting(false);
+            console.error('Error updating favorite:', error);
+            alert('Failed to update favorite status');
         }
+    };
+
+    // Handle delete book
+    const handleDeleteBook = async (bookId, e) => {
+        e.stopPropagation();
+        setOpenMenuId(null);
+        
+        if (!window.confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/api/books/${bookId}`, {
+                method: 'DELETE',
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                fetchBooks(); // Refresh the list
+            } else {
+                alert('Failed to delete book: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error deleting book:', error);
+            alert('Failed to delete book. Please try again.');
+        }
+    };
+
+    // Toggle book menu
+    const handleToggleMenu = (bookId, e) => {
+        e.stopPropagation();
+        setOpenMenuId(openMenuId === bookId ? null : bookId);
     };
 
     // Handle opening existing book
@@ -411,12 +543,12 @@ const Dashboard = () => {
                         >
                             Favorites
                         </button>
-                        <button 
+                        {/* <button 
                             className={`tab ${activeTab === 'archive' ? 'active' : ''}`}
                             onClick={() => setActiveTab('archive')}
                         >
                             Archive
-                        </button>
+                        </button> */}
                     </div>
                 </div>
 
@@ -452,15 +584,39 @@ const Dashboard = () => {
                                         : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
                                 }}
                             >
-                                <button 
-                                    className="draft-menu-btn"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        // TODO: Add menu options (edit, delete, favorite, archive)
-                                    }}
-                                >
-                                    ⋮
-                                </button>
+                                <div className="draft-menu-wrapper" ref={openMenuId === book.id ? menuRef : null}>
+                                    <button 
+                                        className="draft-menu-btn"
+                                        onClick={(e) => handleToggleMenu(book.id, e)}
+                                    >
+                                        <MoreVertical size={18} />
+                                    </button>
+                                    {openMenuId === book.id && (
+                                        <div className="draft-menu-dropdown">
+                                            <button 
+                                                className="menu-option"
+                                                onClick={(e) => handleEditBook(book, e)}
+                                            >
+                                                <Edit2 size={16} />
+                                                <span>Edit Details</span>
+                                            </button>
+                                            <button 
+                                                className={`menu-option ${book.isFavorite ? 'menu-option-active' : ''}`}
+                                                onClick={(e) => handleToggleFavorite(book, e)}
+                                            >
+                                                <Star size={16} fill={book.isFavorite ? 'currentColor' : 'none'} />
+                                                <span>{book.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}</span>
+                                            </button>
+                                            <button 
+                                                className="menu-option menu-option-danger"
+                                                onClick={(e) => handleDeleteBook(book.id, e)}
+                                            >
+                                                <Trash2 size={16} />
+                                                <span>Delete Book</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                                 {book.isFavorite && (
                                     <span className="favorite-badge">⭐</span>
                                 )}
@@ -515,9 +671,13 @@ const Dashboard = () => {
             {/* New Document Modal */}
             <NewDocumentModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingBook(null);
+                }}
                 onSubmit={handleCreateBook}
                 isSubmitting={isSubmitting}
+                editingBook={editingBook}
             />
         </div>
     );

@@ -88,8 +88,8 @@
 }
 
 .profile-avatar {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #ff6933;
@@ -281,23 +281,27 @@
     background-repeat: no-repeat;
 }
 
-.draft-menu-btn {
+.draft-menu-wrapper {
     position: absolute;
     top: 8px;
     right: 8px;
+    z-index: 5;
+}
+
+.draft-menu-btn {
     background: rgba(0, 0, 0, 0.3);
     border: none;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.9);
     font-size: 18px;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .draft-card:hover .draft-menu-btn {
@@ -306,6 +310,68 @@
 
 .draft-menu-btn:hover {
     background: rgba(0, 0, 0, 0.5);
+}
+
+/* Dropdown Menu */
+.draft-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    min-width: 150px;
+    overflow: hidden;
+    z-index: 100;
+    animation: dropdownFadeIn 0.15s ease;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menu-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 14px;
+    background: none;
+    border: none;
+    font-family: 'Newsreader', serif;
+    font-size: 14px;
+    color: #1d110c;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    text-align: left;
+}
+
+.menu-option:hover {
+    background-color: #fcf9f8;
+}
+
+.menu-option-danger {
+    color: #dc3545;
+}
+
+.menu-option-danger:hover {
+    background-color: #fff5f5;
+}
+
+.menu-option-active {
+    color: #ff6933;
+}
+
+.menu-option-active:hover {
+    background-color: #fff5f2;
 }
 
 .draft-info {
