@@ -109,7 +109,7 @@ const Login = () => {
 
     // Show loading state while Clerk is loading
     if (!isLoaded) {
-        return <Loading fullScreen={true} message="Loading authentication..." />;
+        return <Loading fullScreen={true} message="" />;
     }
 
     return (

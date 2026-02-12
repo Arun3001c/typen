@@ -481,7 +481,7 @@ const Dashboard = () => {
 
     // Show loading state
     if (!isLoaded) {
-        return <Loading fullScreen={true} message="Loading your drafts..." />;
+        return <Loading fullScreen={true} message="" />;
     }
 
     if (!isSignedIn) {

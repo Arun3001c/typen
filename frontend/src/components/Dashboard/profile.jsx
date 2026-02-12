@@ -19,6 +19,8 @@ import {
   Trash2
 } from 'lucide-react';
 import './profile.css';
+import { Loading } from '../loading';
+
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -136,11 +138,13 @@ const Profile = () => {
   };
 
   if (!isLoaded) {
-    return (
-      <div className="profile-container">
-        <div className="profile-loading">Loading...</div>
-      </div>
-    );
+    // return (
+    //   <div className="profile-container">
+    //     <div className="profile-loading">Loading...</div>
+    //   </div>
+    // );
+        return <Loading fullScreen={true} message="" />;
+
   }
 
   if (!user) {
