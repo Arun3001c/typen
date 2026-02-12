@@ -232,6 +232,26 @@
     gap: 8px;
 }
 
+/* Prediction Loading State */
+.prediction-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #a15d45;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.prediction-loading span {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
 .word-card {
     background-color: #f8f8f8;
     border: 1px solid #e8e8e8;

@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
 import base64
+import cohere
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,7 +20,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Enable CORS to allow frontend requests from React app
-CORS(app, origins=["http://localhost:5173", "http://localhost:3000"])
+CORS(app, origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"])
 
 # MongoDB connection using environment variable
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
@@ -422,6 +423,113 @@ def delete_book(book_id):
         return jsonify({
             "status": "error",
             "message": "Internal server error"
+        }), 500
+
+
+# ============================================
+# WORD PREDICTION API
+# ============================================
+
+# Initialize Cohere client
+COHERE_API_KEY = os.getenv("COHERE_API_KEY")
+co = cohere.ClientV2(api_key=COHERE_API_KEY) if COHERE_API_KEY else None
+
+@app.route("/api/predict", methods=["POST"])
+def predict_next_words():
+    """
+    Predict next words using Cohere API
+    Returns exactly 5 word predictions
+    """
+    try:
+        if not co:
+            print("Cohere API key not configured")
+            return jsonify({
+                "status": "error",
+                "message": "Cohere API key not configured"
+            }), 500
+
+        data = request.get_json()
+        text = data.get("text", "").strip()
+
+        if not text:
+            # Return default predictions for empty text
+            return jsonify({
+                "status": "success",
+                "predictions": [
+                    {"id": 1, "word": "the", "rank": "1"},
+                    {"id": 2, "word": "once", "rank": "2"},
+                    {"id": 3, "word": "in", "rank": "3"},
+                    {"id": 4, "word": "it", "rank": "4"},
+                    {"id": 5, "word": "there", "rank": "5"}
+                ]
+            }), 200
+
+        # Use only last 500 characters for context
+        context = text[-500:] if len(text) > 500 else text
+
+        prompt = f"""Generate exactly 5 possible next words for the given sentence.
+
+IMPORTANT OUTPUT RULES:
+- Output exactly 5 words.
+- Each must be a single word.
+- Lowercase only.
+- No punctuation.
+- No explanation.
+- No numbering.
+- Separate words using a single comma.
+- No spaces before or after commas.
+
+Sentence: {context}
+
+Output:"""
+
+        response = co.chat(
+            model="command-a-03-2025",
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        # Parse the response
+        generated_text = response.message.content[0].text.strip()
+        print(f"Cohere response: {generated_text}")
+        
+        # Extract words - split by comma and clean
+        import re
+        # First try comma-separated
+        if ',' in generated_text:
+            words = [w.strip().lower() for w in generated_text.split(',')]
+        else:
+            # Fallback to space-separated
+            words = generated_text.lower().split()
+        
+        # Clean words - remove any non-alphabetic characters
+        words = [re.sub(r'[^a-z]', '', w) for w in words]
+        words = [w for w in words if w]  # Remove empty strings
+        words = words[:5]  # Take only first 5
+
+        # Ensure we have exactly 5 words (pad with defaults if needed)
+        default_words = ["and", "the", "to", "of", "a"]
+        while len(words) < 5:
+            words.append(default_words[len(words)])
+
+        predictions = [
+            {"id": i + 1, "word": word, "rank": str(i + 1)}
+            for i, word in enumerate(words)
+        ]
+
+        return jsonify({
+            "status": "success",
+            "predictions": predictions
+        }), 200
+
+    except Exception as e:
+        print(f"Error predicting words: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "message": str(e)
         }), 500
 
 

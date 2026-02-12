@@ -31,13 +31,9 @@ const IconButton = ({ children, onClick, className = '', active = false, title =
 );
 
 // WordPredictionPanel Component
-const WordPredictionPanel = ({ onWordClick, predictions = [] }) => {
+const WordPredictionPanel = ({ onWordClick, predictions = [], isLoading = false }) => {
     const defaultPredictions = [
-        { id: 5, word: 'the', rank: '5' },
-        { id: 4, word: 'and', rank: '4' },
-        { id: 3, word: 'to', rank: '3' },
-        { id: 2, word: 'of', rank: '2' },
-        { id: 1, word: 'in', rank: '1' }
+        
     ];
 
     const displayPredictions = predictions.length > 0 ? predictions : defaultPredictions;
@@ -54,7 +50,12 @@ const WordPredictionPanel = ({ onWordClick, predictions = [] }) => {
                     </div>
 
                     <div className="words-grid">
-                        {displayPredictions.map((prediction) => (
+                        {isLoading && (
+                            <div className="prediction-loading">
+                                <span>Thinking...</span>
+                            </div>
+                        )}
+                        {!isLoading && displayPredictions.map((prediction) => (
                             <button
                                 key={prediction.id}
                                 onClick={() => onWordClick(prediction.word)}
@@ -265,9 +266,13 @@ const Editor = () => {
 
     // Word predictions
     const [predictions, setPredictions] = useState([]);
+    const [isPredicting, setIsPredicting] = useState(false);
 
     // Auto-save timer
     const autoSaveTimerRef = useRef(null);
+    
+    // Prediction debounce timer
+    const predictionTimerRef = useRef(null);
 
     // Redirect to login if not authenticated
     useEffect(() => {
@@ -304,6 +309,15 @@ const Editor = () => {
         };
     }, [content]);
 
+    // Cleanup prediction timer on unmount
+    useEffect(() => {
+        return () => {
+            if (predictionTimerRef.current) {
+                clearTimeout(predictionTimerRef.current);
+            }
+        };
+    }, []);
+
     const loadBook = async () => {
         try {
             setIsLoading(true);
@@ -339,19 +353,51 @@ const Editor = () => {
         setCharCount(chars);
     };
 
+    // Fetch predictions from Cohere API
+    const fetchPredictions = async (text) => {
+        if (!text.trim()) {
+            setPredictions([]);
+            return;
+        }
+
+        try {
+            setIsPredicting(true);
+            const response = await fetch(`${API_URL}/api/predict`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text }),
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                setPredictions(data.predictions);
+            }
+        } catch (error) {
+            console.error('Error fetching predictions:', error);
+        } finally {
+            setIsPredicting(false);
+        }
+    };
+
     const handleContentChange = () => {
         if (editorRef.current) {
             const htmlContent = editorRef.current.innerHTML;
             setContent(htmlContent);
             updateCounts(htmlContent);
             
-            // Get last word for predictions
-            const plainText = editorRef.current.innerText;
-            const words = plainText.trim().split(/\s+/);
-            const lastWord = words[words.length - 1] || '';
+            // Get plain text for predictions
+            const plainText = editorRef.current.innerText.trim();
             
-            // TODO: Call prediction API with lastWord
-            // For now using static predictions
+            // Debounce prediction API calls (500ms delay)
+            if (predictionTimerRef.current) {
+                clearTimeout(predictionTimerRef.current);
+            }
+            predictionTimerRef.current = setTimeout(() => {
+                fetchPredictions(plainText);
+            }, 500);
         }
     };
 
@@ -475,6 +521,7 @@ const Editor = () => {
                 <WordPredictionPanel 
                     onWordClick={insertWordAtCursor}
                     predictions={predictions}
+                    isLoading={isPredicting}
                 />
                 <TextEditorPanel 
                     editorRef={editorRef}
