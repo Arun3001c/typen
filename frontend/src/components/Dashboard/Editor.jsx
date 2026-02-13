@@ -12,7 +12,9 @@ import {
     ArrowLeft, Save, MoreVertical, Undo, Redo, Bold, Italic, 
     Underline, Strikethrough, Palette, Highlighter, List, ListOrdered,
     AlignLeft, AlignCenter, AlignRight, AlignJustify, Download, Search,
-    ChevronDown
+    ChevronDown, ChevronLeft, ChevronRight, Clock, FileText, Type, Hash,
+    Sparkles, Wand2, Expand, Shrink, MessageSquare, BookOpen, Gauge,
+    Focus, Eye, CheckCircle, BarChart3, Zap, AlertCircle, RefreshCw
 } from 'lucide-react';
 import './editor.css';
 
@@ -31,45 +33,102 @@ const IconButton = ({ children, onClick, className = '', active = false, title =
 );
 
 // WordPredictionPanel Component
-const WordPredictionPanel = ({ onWordClick, predictions = [], isLoading = false }) => {
-    const defaultPredictions = [
-        
-    ];
+const WordPredictionPanel = ({ 
+    onWordClick, 
+    predictions = [], 
+    isLoading = false,
+    isCollapsed,
+    onToggleCollapse,
+    onRegenerate
+}) => {
+    // Separate probable and creative predictions
+    const probablePredictions = predictions.filter(p => p.type === 'probable' || !p.type);
+    const creativePredictions = predictions.filter(p => p.type === 'creative');
 
-    const displayPredictions = predictions.length > 0 ? predictions : defaultPredictions;
+    if (isCollapsed) {
+        return (
+            <div className="prediction-panel collapsed">
+                <button className="panel-toggle" onClick={onToggleCollapse} title="Expand Predictions">
+                    <ChevronRight size={18} />
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="prediction-panel">
+            <div className="panel-header-bar">
+                <h3>Word Predictions</h3>
+                <div className="panel-header-actions">
+                    <button className="regenerate-btn" onClick={onRegenerate} title="Regenerate predictions" disabled={isLoading}>
+                        <RefreshCw size={14} className={isLoading ? 'spinning' : ''} />
+                    </button>
+                    <button className="panel-toggle" onClick={onToggleCollapse} title="Collapse Panel">
+                        <ChevronLeft size={18} />
+                    </button>
+                </div>
+            </div>
+
             <div className="panel-container">
                 <div className="panel-content">
-                    <div className="panel-header">
-                        <div className="panel-title">
-                            <h2>Predicted next words</h2>
-                            <p>Click to insert at cursor</p>
+                    {/* Probable Words Section */}
+                    <div className="prediction-section">
+                        <div className="section-header">
+                            <Zap size={14} />
+                            <span>Predicted Words</span>
+                        </div>
+                        <p className="section-subtitle">Click to insert at cursor</p>
+
+                        <div className="words-grid">
+                            {isLoading && (
+                                <div className="prediction-loading">
+                                    <span>Thinking...</span>
+                                </div>
+                            )}
+                            {!isLoading && probablePredictions.map((prediction) => (
+                                <button
+                                    key={prediction.id}
+                                    onClick={() => onWordClick(prediction.word)}
+                                    className="word-card"
+                                >
+                                    <div className="word-card-inner">
+                                        <div className="word-card-content">
+                                            <span className="word-rank">{prediction.rank}</span>
+                                            <span className="word-text">{prediction.word}</span>
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    <div className="words-grid">
-                        {isLoading && (
-                            <div className="prediction-loading">
-                                <span>Thinking...</span>
+                    {/* Creative Words Section */}
+                    {!isLoading && creativePredictions.length > 0 && (
+                        <div className="prediction-section creative-section">
+                            <div className="section-header">
+                                <Sparkles size={14} />
+                                <span>Creative Alternatives</span>
                             </div>
-                        )}
-                        {!isLoading && displayPredictions.map((prediction) => (
-                            <button
-                                key={prediction.id}
-                                onClick={() => onWordClick(prediction.word)}
-                                className="word-card"
-                            >
-                                <div className="word-card-inner">
-                                    <div className="word-card-content">
-                                        <span className="word-rank">{prediction.rank}</span>
-                                        <span className="word-text">{prediction.word}</span>
-                                    </div>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
+                            <p className="section-subtitle">For more expressive writing</p>
+
+                            <div className="words-grid creative-grid">
+                                {creativePredictions.map((prediction) => (
+                                    <button
+                                        key={prediction.id}
+                                        onClick={() => onWordClick(prediction.word)}
+                                        className="word-card creative-card"
+                                    >
+                                        <div className="word-card-inner">
+                                            <div className="word-card-content">
+                                                <span className="word-rank creative-rank">{prediction.rank}</span>
+                                                <span className="word-text">{prediction.word}</span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -209,7 +268,7 @@ const TextEditorPanel = ({
                         </div>
 
                         {/* Bottom Row - Status and Stats */}
-                        <div className="toolbar-row-bottom">
+                        {/* <div className="toolbar-row-bottom">
                             <IconButton title="Search">
                                 <Search size={16} />
                             </IconButton>
@@ -224,7 +283,7 @@ const TextEditorPanel = ({
                             <span className="save-time">
                                 {lastSaved ? `Saved ${lastSaved}` : 'Not saved yet'}
                             </span>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* A4 Document Editor */}
@@ -238,6 +297,240 @@ const TextEditorPanel = ({
                                 suppressContentEditableWarning={true}
                                 data-placeholder="Start writing your story..."
                             />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// WritingRibbon Component - Professional writing utility panel
+const WritingRibbon = ({
+    isCollapsed,
+    onToggleCollapse,
+    wordCount,
+    charCount,
+    content,
+    genre,
+    onGenreChange,
+    onToneChange,
+    tone,
+    focusMode,
+    onFocusModeToggle,
+    autoSaveStatus,
+    onAIAction,
+    lastSaved
+}) => {
+    const [writingIntensity, setWritingIntensity] = useState(50);
+
+    // Calculate reading time (average 200 words per minute)
+    const readingTime = Math.ceil(wordCount / 200) || 1;
+
+    // Calculate paragraph count
+    const paragraphCount = content 
+        ? content.replace(/<[^>]*>/g, '\n').split(/\n\s*\n/).filter(p => p.trim()).length 
+        : 0;
+
+    // Calculate sentence count (rough estimate)
+    const plainText = content ? content.replace(/<[^>]*>/g, ' ') : '';
+    const sentenceCount = plainText.split(/[.!?]+/).filter(s => s.trim()).length;
+
+    // Vocabulary richness (unique words / total words)
+    const words = plainText.toLowerCase().match(/\b[a-z]+\b/g) || [];
+    const uniqueWords = new Set(words).size;
+    const vocabRichness = words.length > 0 ? Math.round((uniqueWords / words.length) * 100) : 0;
+
+    // Average sentence length
+    const avgSentenceLength = sentenceCount > 0 ? Math.round(wordCount / sentenceCount) : 0;
+
+    // Passive voice detection (simple heuristic)
+    const passivePatterns = /\b(was|were|been|being|is|are|am)\s+\w+ed\b/gi;
+    const passiveCount = (plainText.match(passivePatterns) || []).length;
+    const passivePercentage = sentenceCount > 0 ? Math.round((passiveCount / sentenceCount) * 100) : 0;
+
+    const genres = [
+        'Fiction', 'Non-Fiction', 'Mystery', 'Romance', 'Sci-Fi', 
+        'Fantasy', 'Thriller', 'Horror', 'Biography', 'Self-Help'
+    ];
+
+    const tones = [
+        'Neutral', 'Formal', 'Casual', 'Dramatic', 'Humorous', 
+        'Poetic', 'Suspenseful', 'Romantic'
+    ];
+
+    if (isCollapsed) {
+        return (
+            <div className="writing-ribbon collapsed">
+                <button className="ribbon-toggle" onClick={onToggleCollapse} title="Expand Panel">
+                    <ChevronRight size={18} />
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="writing-ribbon">
+            <div className="ribbon-header">
+                <h3>Writing Tools</h3>
+                <button className="ribbon-toggle" onClick={onToggleCollapse} title="Collapse Panel">
+                    <ChevronLeft size={18} />
+                </button>
+            </div>
+
+            <div className="ribbon-content">
+                {/* Writing Stats Section */}
+                <div className="ribbon-section">
+                    <div className="section-header">
+                        <FileText size={14} />
+                        <span>Document Stats</span>
+                    </div>
+                    <div className="stats-grid">
+                        <div className="stat-item">
+                            <span className="stat-value">{wordCount}</span>
+                            <span className="stat-label">Words</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-value">{charCount}</span>
+                            <span className="stat-label">Chars</span>
+                        </div>
+                    </div>
+                    <div className="saved-time-row">
+                        <CheckCircle size={12} className={autoSaveStatus === 'saved' ? 'saved' : ''} />
+                        <span className="saved-label">Last saved:</span>
+                        <span className="saved-value">{lastSaved || 'Not saved'}</span>
+                    </div>
+                </div>
+
+                {/* AI Assistance Section */}
+                {/* <div className="ribbon-section">
+                    <div className="section-header">
+                        <Sparkles size={14} />
+                        <span>AI Assistance</span>
+                    </div>
+                    <div className="ai-buttons">
+                        <button className="ai-btn" onClick={() => onAIAction('regenerate')} title="Regenerate suggestions">
+                            <RefreshCw size={14} />
+                            <span>Regenerate</span>
+                        </button>
+                        <button className="ai-btn" onClick={() => onAIAction('improve')} title="Improve sentence">
+                            <Wand2 size={14} />
+                            <span>Improve</span>
+                        </button>
+                        <button className="ai-btn" onClick={() => onAIAction('expand')} title="Expand paragraph">
+                            <Expand size={14} />
+                            <span>Expand</span>
+                        </button>
+                        <button className="ai-btn" onClick={() => onAIAction('shorten')} title="Shorten paragraph">
+                            <Shrink size={14} />
+                            <span>Shorten</span>
+                        </button>
+                        <button className="ai-btn" onClick={() => onAIAction('tone')} title="Change tone">
+                            <MessageSquare size={14} />
+                            <span>Change Tone</span>
+                        </button>
+                    </div>
+                </div> */}
+
+                {/* Genre & Style Section */}
+                <div className="ribbon-section">
+                    <div className="section-header">
+                        <BookOpen size={14} />
+                        <span>Genre & Style</span>
+                    </div>
+                    <div className="style-controls">
+                        <div className="control-group">
+                            <label>Genre</label>
+                            <select value={genre} onChange={(e) => onGenreChange(e.target.value)}>
+                                {genres.map(g => (
+                                    <option key={g} value={g.toLowerCase()}>{g}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="control-group">
+                            <label>Tone</label>
+                            <select value={tone} onChange={(e) => onToneChange(e.target.value)}>
+                                {tones.map(t => (
+                                    <option key={t} value={t.toLowerCase()}>{t}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="control-group">
+                            <label>Intensity</label>
+                            <div className="slider-container">
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="100" 
+                                    value={writingIntensity}
+                                    onChange={(e) => setWritingIntensity(e.target.value)}
+                                />
+                                <span className="slider-value">{writingIntensity}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Productivity Section */}
+                <div className="ribbon-section">
+                    <div className="section-header">
+                        <Zap size={14} />
+                        <span>Productivity</span>
+                    </div>
+                    <div className="productivity-controls">
+                        <button 
+                            className={`toggle-btn ${focusMode ? 'active' : ''}`}
+                            onClick={onFocusModeToggle}
+                        >
+                            <Focus size={14} />
+                            <span>Focus Mode</span>
+                        </button>
+                        <div className="auto-save-status">
+                            <CheckCircle size={14} className={autoSaveStatus === 'saved' ? 'saved' : ''} />
+                            <span>{autoSaveStatus === 'saved' ? 'Auto-saved' : 'Saving...'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Document Insights Section */}
+                <div className="ribbon-section">
+                    <div className="section-header">
+                        <BarChart3 size={14} />
+                        <span>Document Insights</span>
+                    </div>
+                    <div className="insights-list">
+                        <div className="insight-item">
+                            <div className="insight-header">
+                                <span>Vocabulary Richness</span>
+                                <span className={`insight-value ${vocabRichness > 60 ? 'good' : vocabRichness > 40 ? 'medium' : 'low'}`}>
+                                    {vocabRichness}%
+                                </span>
+                            </div>
+                            <div className="insight-bar">
+                                <div className="insight-fill" style={{ width: `${vocabRichness}%` }}></div>
+                            </div>
+                        </div>
+                        <div className="insight-item">
+                            <div className="insight-header">
+                                <span>Avg Sentence Length</span>
+                                <span className={`insight-value ${avgSentenceLength > 10 && avgSentenceLength < 20 ? 'good' : 'medium'}`}>
+                                    {avgSentenceLength} words
+                                </span>
+                            </div>
+                            <div className="insight-bar">
+                                <div className="insight-fill" style={{ width: `${Math.min(avgSentenceLength * 4, 100)}%` }}></div>
+                            </div>
+                        </div>
+                        <div className="insight-item">
+                            <div className="insight-header">
+                                <span>Passive Voice</span>
+                                <span className={`insight-value ${passivePercentage < 10 ? 'good' : passivePercentage < 20 ? 'medium' : 'low'}`}>
+                                    {passivePercentage}%
+                                </span>
+                            </div>
+                            <div className="insight-bar warning">
+                                <div className="insight-fill" style={{ width: `${passivePercentage}%` }}></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -267,6 +560,14 @@ const Editor = () => {
     // Word predictions
     const [predictions, setPredictions] = useState([]);
     const [isPredicting, setIsPredicting] = useState(false);
+
+    // Panel collapse states
+    const [isPredictionCollapsed, setIsPredictionCollapsed] = useState(false);
+    const [isRibbonCollapsed, setIsRibbonCollapsed] = useState(false);
+    const [selectedGenre, setSelectedGenre] = useState('fiction');
+    const [selectedTone, setSelectedTone] = useState('neutral');
+    const [focusMode, setFocusMode] = useState(false);
+    const [autoSaveStatus, setAutoSaveStatus] = useState('saved');
 
     // Auto-save timer
     const autoSaveTimerRef = useRef(null);
@@ -327,6 +628,10 @@ const Editor = () => {
             if (data.status === 'success') {
                 setBook(data.book);
                 setContent(data.book.content || '');
+                // Set genre from book if available
+                if (data.book.genre) {
+                    setSelectedGenre(data.book.genre);
+                }
                 // Set content in editor
                 if (editorRef.current) {
                     editorRef.current.innerHTML = data.book.content || '';
@@ -367,7 +672,10 @@ const Editor = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ text }),
+                body: JSON.stringify({ 
+                    text,
+                    genre: book?.genre || 'fiction'
+                }),
             });
 
             const data = await response.json();
@@ -431,6 +739,7 @@ const Editor = () => {
 
         try {
             if (!isAutoSave) setIsSaving(true);
+            if (isAutoSave) setAutoSaveStatus('saving');
 
             const response = await fetch(`${API_URL}/api/books/${bookId}`, {
                 method: 'PUT',
@@ -448,11 +757,14 @@ const Editor = () => {
             if (data.status === 'success') {
                 const now = new Date();
                 setLastSaved(now.toLocaleTimeString());
+                setAutoSaveStatus('saved');
             } else {
                 console.error('Failed to save:', data.message);
+                setAutoSaveStatus('error');
             }
         } catch (error) {
             console.error('Error saving book:', error);
+            setAutoSaveStatus('error');
         } finally {
             if (!isAutoSave) setIsSaving(false);
         }
@@ -463,6 +775,25 @@ const Editor = () => {
             await saveBook();
         }
         navigate('/dashboard');
+    };
+
+    // Handle AI assistance actions
+    const handleAIAction = async (action) => {
+        const plainText = editorRef.current?.innerText?.trim() || '';
+        if (!plainText && action !== 'regenerate') {
+            alert('Please write some text first');
+            return;
+        }
+
+        // For now, just trigger new predictions
+        // TODO: Implement specific AI actions (improve, expand, shorten, tone)
+        if (action === 'regenerate') {
+            fetchPredictions(plainText);
+        } else {
+            console.log(`AI Action: ${action}`, plainText.slice(-100));
+            // Placeholder for future AI features
+            alert(`${action.charAt(0).toUpperCase() + action.slice(1)} feature coming soon!`);
+        }
     };
 
     // Show loading animation
@@ -479,7 +810,7 @@ const Editor = () => {
     }
 
     return (
-        <div className="editor">
+        <div className={`editor ${focusMode ? 'focus-mode' : ''}`}>
             {/* Header */}
             <header className="editor-header">
                 <button className="editor-back-btn" onClick={handleBack}>
@@ -518,10 +849,29 @@ const Editor = () => {
 
             {/* Two Panel Layout */}
             <div className="panels-container">
+                <WritingRibbon
+                    isCollapsed={isRibbonCollapsed}
+                    onToggleCollapse={() => setIsRibbonCollapsed(!isRibbonCollapsed)}
+                    wordCount={wordCount}
+                    charCount={charCount}
+                    content={content}
+                    genre={selectedGenre}
+                    onGenreChange={setSelectedGenre}
+                    tone={selectedTone}
+                    onToneChange={setSelectedTone}
+                    focusMode={focusMode}
+                    onFocusModeToggle={() => setFocusMode(!focusMode)}
+                    autoSaveStatus={autoSaveStatus}
+                    onAIAction={handleAIAction}
+                    lastSaved={lastSaved}
+                />
                 <WordPredictionPanel 
                     onWordClick={insertWordAtCursor}
                     predictions={predictions}
                     isLoading={isPredicting}
+                    isCollapsed={isPredictionCollapsed}
+                    onToggleCollapse={() => setIsPredictionCollapsed(!isPredictionCollapsed)}
+                    onRegenerate={() => handleAIAction('regenerate')}
                 />
                 <TextEditorPanel 
                     editorRef={editorRef}

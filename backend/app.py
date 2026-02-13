@@ -438,7 +438,7 @@ co = cohere.ClientV2(api_key=COHERE_API_KEY) if COHERE_API_KEY else None
 def predict_next_words():
     """
     Predict next words using Cohere API
-    Returns exactly 5 word predictions
+    Returns 5 probable + 3 creative word predictions for literary writing
     """
     try:
         if not co:
@@ -450,38 +450,44 @@ def predict_next_words():
 
         data = request.get_json()
         text = data.get("text", "").strip()
+        genre = data.get("genre", "fiction").strip()
 
         if not text:
             # Return default predictions for empty text
             return jsonify({
                 "status": "success",
                 "predictions": [
-                    {"id": 1, "word": "the", "rank": "1"},
-                    {"id": 2, "word": "once", "rank": "2"},
-                    {"id": 3, "word": "in", "rank": "3"},
-                    {"id": 4, "word": "it", "rank": "4"},
-                    {"id": 5, "word": "there", "rank": "5"}
+                    {"id": 1, "word": "the", "rank": "1", "type": "probable"},
+                    {"id": 2, "word": "once", "rank": "2", "type": "probable"},
+                    {"id": 3, "word": "in", "rank": "3", "type": "probable"},
+                    {"id": 4, "word": "it", "rank": "4", "type": "probable"},
+                    {"id": 5, "word": "there", "rank": "5", "type": "probable"},
+                    {"id": 6, "word": "beneath", "rank": "C1", "type": "creative"},
+                    {"id": 7, "word": "whispered", "rank": "C2", "type": "creative"},
+                    {"id": 8, "word": "shadows", "rank": "C3", "type": "creative"}
                 ]
             }), 200
 
-        # Use only last 500 characters for context
-        context = text[-500:] if len(text) > 500 else text
+        # Extract last 30 words for context
+        words_list = text.split()
+        last_30_words = " ".join(words_list[-30:]) if len(words_list) > 30 else text
 
-        prompt = f"""Generate exactly 5 possible next words for the given sentence.
+        prompt = f"""You are a literary-level predictive writing assistant trained to help professional novelists.
 
-IMPORTANT OUTPUT RULES:
-- Output exactly 5 words.
-- Each must be a single word.
-- Lowercase only.
-- No punctuation.
-- No explanation.
-- No numbering.
-- Separate words using a single comma.
-- No spaces before or after commas.
+You analyze narrative flow, pacing, emotional tone, and genre conventions before predicting the next words.
 
-Sentence: {context}
+Genre: "{genre}"
 
-Output:"""
+Recent Context:
+"{last_30_words}"
+
+Return:
+- 5 highly probable next words
+- 3 creative alternative words
+
+Format:
+comma-separated list only (8 words total, probable first then creative)
+lowercase only, no punctuation, no explanation"""
 
         response = co.chat(
             model="command-a-03-2025",
@@ -506,17 +512,33 @@ Output:"""
         # Clean words - remove any non-alphabetic characters
         words = [re.sub(r'[^a-z]', '', w) for w in words]
         words = [w for w in words if w]  # Remove empty strings
-        words = words[:5]  # Take only first 5
+        words = words[:8]  # Take only first 8
 
-        # Ensure we have exactly 5 words (pad with defaults if needed)
-        default_words = ["and", "the", "to", "of", "a"]
+        # Ensure we have exactly 8 words (pad with defaults if needed)
+        default_probable = ["and", "the", "to", "of", "a"]
+        default_creative = ["beneath", "whispered", "shadows"]
+        
         while len(words) < 5:
-            words.append(default_words[len(words)])
+            words.append(default_probable[len(words)])
+        while len(words) < 8:
+            words.append(default_creative[len(words) - 5])
 
-        predictions = [
-            {"id": i + 1, "word": word, "rank": str(i + 1)}
-            for i, word in enumerate(words)
-        ]
+        # Build predictions with types
+        predictions = []
+        for i, word in enumerate(words[:5]):
+            predictions.append({
+                "id": i + 1,
+                "word": word,
+                "rank": str(i + 1),
+                "type": "probable"
+            })
+        for i, word in enumerate(words[5:8]):
+            predictions.append({
+                "id": i + 6,
+                "word": word,
+                "rank": f"C{i + 1}",
+                "type": "creative"
+            })
 
         return jsonify({
             "status": "success",
