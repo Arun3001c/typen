@@ -145,15 +145,325 @@ const TextEditorPanel = ({
     lastSaved,
     onSave
 }) => {
-    const [fontSize, setFontSize] = useState('16px');
     const [fontFamily, setFontFamily] = useState('Georgia');
+    const [fontSize, setFontSize] = useState(16);
     const [showFontDropdown, setShowFontDropdown] = useState(false);
+    const [showFontSizeDropdown, setShowFontSizeDropdown] = useState(false);
+    
+    // Color states
+    const [textColor, setTextColor] = useState('#000000');
+    const [highlightColor, setHighlightColor] = useState('transparent');
+    const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+    const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+    
+    // Spacing states
+    const [lineSpacing, setLineSpacing] = useState(1.5);
+    const [wordSpacing, setWordSpacing] = useState(0);
+    const [showLineSpacingDropdown, setShowLineSpacingDropdown] = useState(false);
+    const [showWordSpacingDropdown, setShowWordSpacingDropdown] = useState(false);
+    
+    // Multi-page state
+    const [pages, setPages] = useState([{ id: 1, content: '' }]);
+    const pagesContainerRef = useRef(null);
+    const pageRefs = useRef([]);
+    const activePageRef = useRef(0);
+    const contentInitializedRef = useRef(false);
+    const isPaginatingRef = useRef(false);
+    
+    const lineSpacingOptions = [1, 1.15, 1.5, 2, 2.5, 3];
+    const wordSpacingOptions = [0, 1, 2, 3, 4, 5, 6, 8, 10];
+    
+    // Cleanup empty pages on mount
+    useEffect(() => {
+        const cleanupTimer = setTimeout(() => {
+            setPages(currentPages => {
+                if (currentPages.length <= 1) return currentPages;
+                
+                // Filter out empty trailing pages
+                const nonEmptyPages = [];
+                for (let i = 0; i < currentPages.length; i++) {
+                    const pageRef = pageRefs.current[i];
+                    if (pageRef && pageRef.innerText.trim().length > 0) {
+                        nonEmptyPages.push(currentPages[i]);
+                    } else if (i === 0) {
+                        // Always keep the first page
+                        nonEmptyPages.push(currentPages[i]);
+                    }
+                }
+                
+                return nonEmptyPages.length > 0 ? nonEmptyPages : [{ id: 1, content: '' }];
+            });
+        }, 100);
+        
+        return () => clearTimeout(cleanupTimer);
+    }, []);
+    
+    // Save and restore cursor position
+    const saveCursorPosition = () => {
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) return null;
+        
+        const range = selection.getRangeAt(0);
+        const preCaretRange = range.cloneRange();
+        
+        // Find which page contains the cursor
+        let pageIndex = -1;
+        let pageEditor = null;
+        for (let i = 0; i < pageRefs.current.length; i++) {
+            if (pageRefs.current[i]?.contains(range.startContainer)) {
+                pageIndex = i;
+                pageEditor = pageRefs.current[i];
+                break;
+            }
+        }
+        
+        if (pageIndex === -1 || !pageEditor) return null;
+        
+        preCaretRange.selectNodeContents(pageEditor);
+        preCaretRange.setEnd(range.startContainer, range.startOffset);
+        
+        return {
+            pageIndex,
+            offset: preCaretRange.toString().length,
+            collapsed: range.collapsed
+        };
+    };
+    
+    const restoreCursorPosition = (savedPosition) => {
+        if (!savedPosition) return;
+        
+        const { pageIndex, offset } = savedPosition;
+        const pageEditor = pageRefs.current[pageIndex];
+        if (!pageEditor) return;
+        
+        const selection = window.getSelection();
+        const range = document.createRange();
+        
+        let charCount = 0;
+        let found = false;
+        
+        const walker = document.createTreeWalker(
+            pageEditor,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        
+        let node;
+        while ((node = walker.nextNode()) && !found) {
+            const nodeLength = node.textContent.length;
+            if (charCount + nodeLength >= offset) {
+                range.setStart(node, offset - charCount);
+                range.collapse(true);
+                found = true;
+            }
+            charCount += nodeLength;
+        }
+        
+        if (!found && pageEditor.childNodes.length > 0) {
+            // Place cursor at end if position not found
+            range.selectNodeContents(pageEditor);
+            range.collapse(false);
+        }
+        
+        selection.removeAllRanges();
+        selection.addRange(range);
+    };
+    
+    // Check and handle pagination
+    const handlePagination = useCallback(() => {
+        if (isPaginatingRef.current) return;
+        isPaginatingRef.current = true;
+        
+        requestAnimationFrame(() => {
+            const newPages = [...pages];
+            let pagesChanged = false;
+            
+            // Check each page for overflow
+            for (let i = 0; i < pageRefs.current.length; i++) {
+                const pageEditor = pageRefs.current[i];
+                if (!pageEditor) continue;
+                
+                // Skip if editor is empty or has no real content
+                const hasContent = pageEditor.innerText.trim().length > 0;
+                if (!hasContent) continue;
+                
+                // Check if content actually overflows (with small threshold to avoid false positives)
+                const overflowThreshold = 5; // pixels
+                const isOverflowing = pageEditor.scrollHeight > (pageEditor.clientHeight + overflowThreshold);
+                
+                // If content overflows current page
+                if (isOverflowing) {
+                    // Create a new page if needed
+                    if (i === newPages.length - 1) {
+                        newPages.push({ id: Date.now(), content: '' });
+                        pagesChanged = true;
+                    }
+                    
+                    // Move overflow content to next page
+                    const overflowContent = extractOverflowContent(pageEditor, pageEditor.clientHeight);
+                    if (overflowContent && pageRefs.current[i + 1]) {
+                        prependContent(pageRefs.current[i + 1], overflowContent);
+                    }
+                }
+            }
+            
+            // Remove empty trailing pages (keep at least one)
+            while (newPages.length > 1) {
+                const lastPageRef = pageRefs.current[newPages.length - 1];
+                if (lastPageRef && lastPageRef.innerHTML.trim() === '' && 
+                    lastPageRef.innerText.trim() === '') {
+                    newPages.pop();
+                    pagesChanged = true;
+                } else {
+                    break;
+                }
+            }
+            
+            if (pagesChanged) {
+                setPages(newPages);
+            }
+            
+            isPaginatingRef.current = false;
+        });
+    }, [pages]);
+    
+    // Extract content that overflows beyond maxHeight
+    const extractOverflowContent = (editor, maxHeight) => {
+        const children = Array.from(editor.childNodes);
+        let accumulatedHeight = 0;
+        let overflowStartIndex = -1;
+        
+        // Create a temporary measuring element
+        const measurer = document.createElement('div');
+        measurer.style.cssText = window.getComputedStyle(editor).cssText;
+        measurer.style.position = 'absolute';
+        measurer.style.visibility = 'hidden';
+        measurer.style.height = 'auto';
+        measurer.style.width = editor.offsetWidth + 'px';
+        document.body.appendChild(measurer);
+        
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i].cloneNode(true);
+            measurer.appendChild(child);
+            
+            if (measurer.scrollHeight > maxHeight) {
+                overflowStartIndex = i;
+                break;
+            }
+        }
+        
+        document.body.removeChild(measurer);
+        
+        if (overflowStartIndex === -1) return null;
+        
+        // Extract overflow nodes
+        const fragment = document.createDocumentFragment();
+        for (let i = children.length - 1; i >= overflowStartIndex; i--) {
+            fragment.insertBefore(children[i], fragment.firstChild);
+        }
+        
+        return fragment;
+    };
+    
+    // Prepend content to the beginning of an editor
+    const prependContent = (editor, content) => {
+        if (editor.firstChild) {
+            editor.insertBefore(content, editor.firstChild);
+        } else {
+            editor.appendChild(content);
+        }
+    };
+    
+    // Handle input on any page
+    const handlePageInput = (pageIndex) => {
+        // Sync content to the main editorRef for external access
+        if (pageRefs.current[0]) {
+            // Collect all pages content
+            const allContent = pageRefs.current
+                .filter(ref => ref)
+                .map(ref => ref.innerHTML)
+                .join('<!-- page-break -->');
+            
+            // Update the hidden master ref if it exists
+            if (editorRef.current) {
+                editorRef.current.innerHTML = allContent;
+            }
+        }
+        
+        onContentChange();
+        
+        // Only run pagination if there's actual content
+        const currentPage = pageRefs.current[pageIndex];
+        if (currentPage && currentPage.innerText.trim().length > 0) {
+            handlePagination();
+        }
+    };
+    
+    // Initialize first page with existing content
+    useEffect(() => {
+        if (content && !contentInitializedRef.current && pageRefs.current[0]) {
+            contentInitializedRef.current = true;
+            
+            // Split content by page breaks if they exist
+            const pageContents = content.split('<!-- page-break -->').filter(pc => pc.trim() !== '');
+            
+            if (pageContents.length > 1) {
+                const initialPages = pageContents.map((pc, idx) => ({
+                    id: idx + 1,
+                    content: pc
+                }));
+                setPages(initialPages);
+                
+                // Set content after state update
+                setTimeout(() => {
+                    pageContents.forEach((pc, idx) => {
+                        if (pageRefs.current[idx]) {
+                            pageRefs.current[idx].innerHTML = pc;
+                        }
+                    });
+                }, 0);
+            } else if (pageContents.length === 1) {
+                pageRefs.current[0].innerHTML = pageContents[0];
+            }
+            // If no content, leave the page empty
+        }
+    }, [content]);
+    
+    // Update page content when pages state changes (for multi-page initialization)
+    useEffect(() => {
+        pages.forEach((page, idx) => {
+            if (page.content && pageRefs.current[idx] && !pageRefs.current[idx].innerHTML) {
+                pageRefs.current[idx].innerHTML = page.content;
+            }
+        });
+    }, [pages]);
 
     const fonts = ['Georgia', 'Times New Roman', 'Arial', 'Helvetica', 'Inter', 'Roboto'];
+    const fontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72];
+    
+    // Color palette similar to MS Word
+    const textColors = [
+        '#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef', '#f3f3f3', '#ffffff',
+        '#980000', '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#4a86e8', '#0000ff', '#9900ff', '#ff00ff',
+        '#e6b8af', '#f4cccc', '#fce5cd', '#fff2cc', '#d9ead3', '#d0e0e3', '#c9daf8', '#cfe2f3', '#d9d2e9', '#ead1dc',
+        '#dd7e6b', '#ea9999', '#f9cb9c', '#ffe599', '#b6d7a8', '#a2c4c9', '#a4c2f4', '#9fc5e8', '#b4a7d6', '#d5a6bd',
+        '#cc4125', '#e06666', '#f6b26b', '#ffd966', '#93c47d', '#76a5af', '#6d9eeb', '#6fa8dc', '#8e7cc3', '#c27ba0',
+        '#a61c00', '#cc0000', '#e69138', '#f1c232', '#6aa84f', '#45818e', '#3c78d8', '#3d85c6', '#674ea7', '#a64d79',
+        '#85200c', '#990000', '#b45f06', '#bf9000', '#38761d', '#134f5c', '#1155cc', '#0b5394', '#351c75', '#741b47',
+        '#5b0f00', '#660000', '#783f04', '#7f6000', '#274e13', '#0c343d', '#1c4587', '#073763', '#20124d', '#4c1130'
+    ];
+    
+    const highlightColors = [
+        'transparent', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#0000ff', '#ff0000', '#000080', '#008080', '#008000',
+        '#800080', '#800000', '#808000', '#808080', '#c0c0c0', '#ff9999', '#99ff99', '#9999ff', '#ffff99', '#ff99ff'
+    ];
 
     const execCommand = (command, value = null) => {
         document.execCommand(command, false, value);
-        editorRef.current?.focus();
+        // Focus the active page instead of the hidden master ref
+        const activePage = pageRefs.current[activePageRef.current];
+        activePage?.focus();
     };
 
     const handleFontChange = (font) => {
@@ -162,52 +472,136 @@ const TextEditorPanel = ({
         setShowFontDropdown(false);
     };
 
+    const handleFontSizeChange = (size) => {
+        setFontSize(size);
+        execCommand('fontSize', 7); // Use largest size first
+        // Apply actual pixel size via span styling
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const fontElements = editorRef.current?.querySelectorAll('font[size="7"]');
+            fontElements?.forEach(el => {
+                el.removeAttribute('size');
+                el.style.fontSize = `${size}px`;
+            });
+        }
+        setShowFontSizeDropdown(false);
+        editorRef.current?.focus();
+    };
+
+    const increaseFontSize = () => {
+        const currentIndex = fontSizes.indexOf(fontSize);
+        if (currentIndex < fontSizes.length - 1) {
+            handleFontSizeChange(fontSizes[currentIndex + 1]);
+        }
+    };
+
+    const decreaseFontSize = () => {
+        const currentIndex = fontSizes.indexOf(fontSize);
+        if (currentIndex > 0) {
+            handleFontSizeChange(fontSizes[currentIndex - 1]);
+        }
+    };
+
+    // Apply text color
+    const handleTextColorChange = (color) => {
+        setTextColor(color);
+        execCommand('foreColor', color);
+        setShowTextColorPicker(false);
+    };
+
+    // Apply highlight/background color
+    const handleHighlightChange = (color) => {
+        setHighlightColor(color);
+        if (color === 'transparent') {
+            // Remove highlight by setting background to transparent
+            execCommand('backColor', 'transparent');
+        } else {
+            execCommand('hiliteColor', color);
+        }
+        setShowHighlightPicker(false);
+    };
+
+    // Close all dropdowns
+    const closeAllDropdowns = () => {
+        setShowTextColorPicker(false);
+        setShowHighlightPicker(false);
+        setShowFontDropdown(false);
+        setShowFontSizeDropdown(false);
+        setShowLineSpacingDropdown(false);
+        setShowWordSpacingDropdown(false);
+    };
+
+    // Handle click outside to close dropdowns
+    React.useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (!e.target.closest('.color-picker-wrapper') && 
+                !e.target.closest('.font-selector-enhanced') && 
+                !e.target.closest('.font-size-selector') &&
+                !e.target.closest('.spacing-selector-wrapper')) {
+                closeAllDropdowns();
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
+
     return (
         <div className="editor-panel">
             <div className="editor-container">
                 <div className="editor-content">
                     
-                    {/* Formatting Toolbar */}
-                    <div className="toolbar-section">
-                        
-                        {/* First Row - Main Formatting */}
-                        <div className="toolbar-row">
-                            <div className="formatting-tools">
+                    {/* Enhanced Toolbar */}
+                    <div className="toolbar-enhanced">
+                        {/* Edit Group */}
+                        <div className="toolbar-group-enhanced">
+                            <div className="group-label">Edit</div>
+                            <div className="group-buttons">
                                 <IconButton onClick={() => execCommand('undo')} title="Undo">
                                     <Undo size={16} />
                                 </IconButton>
                                 <IconButton onClick={() => execCommand('redo')} title="Redo">
                                     <Redo size={16} />
                                 </IconButton>
-                                <div className="toolbar-divider" />
-                                <IconButton onClick={() => execCommand('bold')} title="Bold">
+                            </div>
+                        </div>
+
+                        {/* Format Group */}
+                        <div className="toolbar-group-enhanced">
+                            <div className="group-label">Format</div>
+                            <div className="group-buttons">
+                                <IconButton onClick={() => execCommand('bold')} title="Bold (Ctrl+B)">
                                     <Bold size={16} />
                                 </IconButton>
-                                <IconButton onClick={() => execCommand('italic')} title="Italic">
+                                <IconButton onClick={() => execCommand('italic')} title="Italic (Ctrl+I)">
                                     <Italic size={16} />
                                 </IconButton>
-                                <IconButton onClick={() => execCommand('underline')} title="Underline">
+                                <IconButton onClick={() => execCommand('underline')} title="Underline (Ctrl+U)">
                                     <Underline size={16} />
                                 </IconButton>
                                 <IconButton onClick={() => execCommand('strikeThrough')} title="Strikethrough">
-                                    <Strikethrough size={16} />
+                                    <span className="strikethrough-icon">abc</span>
                                 </IconButton>
                             </div>
+                        </div>
 
-                            {/* Font Controls */}
-                            <div className="font-controls">
-                                <span className="font-label">Font</span>
-                                <div className="font-selector" onClick={() => setShowFontDropdown(!showFontDropdown)}>
-                                    <span className="font-name">{fontFamily}</span>
+                        {/* Font Group */}
+                        <div className="toolbar-group-enhanced font-group">
+                            <div className="group-label">Font</div>
+                            <div className="font-controls-row">
+                                <div className="font-selector-enhanced" onClick={() => setShowFontDropdown(!showFontDropdown)}>
+                                    <span className="font-name-display">{fontFamily}</span>
                                     <ChevronDown size={14} />
                                     {showFontDropdown && (
-                                        <div className="font-dropdown">
+                                        <div className="font-dropdown-enhanced">
                                             {fonts.map(font => (
                                                 <div 
                                                     key={font} 
-                                                    className="font-option"
+                                                    className={`font-option-enhanced ${font === fontFamily ? 'active' : ''}`}
                                                     style={{ fontFamily: font }}
-                                                    onClick={() => handleFontChange(font)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleFontChange(font);
+                                                    }}
                                                 >
                                                     {font}
                                                 </div>
@@ -215,25 +609,141 @@ const TextEditorPanel = ({
                                         </div>
                                     )}
                                 </div>
+                                <div className="font-size-controls">
+                                    <button className="font-size-btn" onClick={decreaseFontSize} title="Decrease font size">
+                                        −
+                                    </button>
+                                    <div className="font-size-selector" onClick={() => setShowFontSizeDropdown(!showFontSizeDropdown)}>
+                                        <span className="font-size-display">{fontSize}</span>
+                                        <ChevronDown size={12} />
+                                        {showFontSizeDropdown && (
+                                            <div className="font-size-dropdown">
+                                                {fontSizes.map(size => (
+                                                    <div 
+                                                        key={size} 
+                                                        className={`font-size-option ${size === fontSize ? 'active' : ''}`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleFontSizeChange(size);
+                                                        }}
+                                                    >
+                                                        {size}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button className="font-size-btn" onClick={increaseFontSize} title="Increase font size">
+                                        +
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Second Row - Color and Text Tools */}
-                        <div className="toolbar-row-second">
-                            <div className="color-tools">
-                                <IconButton title="Text Color">
-                                    <Palette size={16} />
-                                </IconButton>
-                                <span className="color-label">Color</span>
-                                <div className="highlight-tools">
-                                    <IconButton title="Highlight">
+                        {/* Colors Group */}
+                        <div className="toolbar-group-enhanced">
+                            <div className="group-label">Colors</div>
+                            <div className="group-buttons color-buttons">
+                                {/* Text Color Button */}
+                                <div className="color-picker-wrapper">
+                                    <button 
+                                        className="color-btn" 
+                                        onClick={() => {
+                                            setShowHighlightPicker(false);
+                                            setShowTextColorPicker(!showTextColorPicker);
+                                        }}
+                                        title="Text Color"
+                                    >
+                                        <Palette size={16} />
+                                        <span className="color-indicator" style={{ backgroundColor: textColor }}></span>
+                                    </button>
+                                    {showTextColorPicker && (
+                                        <div className="color-palette-dropdown">
+                                            <div className="color-palette-header">
+                                                <span>Text Color</span>
+                                                <button 
+                                                    className="color-reset-btn"
+                                                    onClick={() => handleTextColorChange('#000000')}
+                                                >
+                                                    Automatic
+                                                </button>
+                                            </div>
+                                            <div className="color-palette-grid">
+                                                {textColors.map((color, index) => (
+                                                    <button
+                                                        key={index}
+                                                        className={`color-swatch ${color === textColor ? 'active' : ''}`}
+                                                        style={{ backgroundColor: color }}
+                                                        onClick={() => handleTextColorChange(color)}
+                                                        title={color}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <div className="color-palette-footer">
+                                                <label className="custom-color-label">
+                                                    <input 
+                                                        type="color" 
+                                                        value={textColor}
+                                                        onChange={(e) => handleTextColorChange(e.target.value)}
+                                                        className="custom-color-input"
+                                                    />
+                                                    <span>Custom Color...</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Highlight Color Button */}
+                                <div className="color-picker-wrapper">
+                                    <button 
+                                        className="color-btn highlight-btn" 
+                                        onClick={() => {
+                                            setShowTextColorPicker(false);
+                                            setShowHighlightPicker(!showHighlightPicker);
+                                        }}
+                                        title="Highlight Color"
+                                    >
                                         <Highlighter size={16} />
-                                    </IconButton>
-                                    <span className="highlight-label">Highlight</span>
+                                        <span 
+                                            className="color-indicator highlight-indicator" 
+                                            style={{ backgroundColor: highlightColor === 'transparent' ? '#ffffff' : highlightColor }}
+                                        ></span>
+                                    </button>
+                                    {showHighlightPicker && (
+                                        <div className="color-palette-dropdown highlight-dropdown">
+                                            <div className="color-palette-header">
+                                                <span>Highlight Color</span>
+                                                <button 
+                                                    className="color-reset-btn"
+                                                    onClick={() => handleHighlightChange('transparent')}
+                                                >
+                                                    No Color
+                                                </button>
+                                            </div>
+                                            <div className="color-palette-grid highlight-grid">
+                                                {highlightColors.map((color, index) => (
+                                                    <button
+                                                        key={index}
+                                                        className={`color-swatch ${color === 'transparent' ? 'no-color' : ''} ${color === highlightColor ? 'active' : ''}`}
+                                                        style={{ backgroundColor: color === 'transparent' ? '#ffffff' : color }}
+                                                        onClick={() => handleHighlightChange(color)}
+                                                        title={color === 'transparent' ? 'No Color' : color}
+                                                    >
+                                                        {color === 'transparent' && <span className="no-color-x">✕</span>}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="toolbar-group">
+                        {/* Lists Group */}
+                        <div className="toolbar-group-enhanced">
+                            <div className="group-label">Lists</div>
+                            <div className="group-buttons">
                                 <IconButton onClick={() => execCommand('insertUnorderedList')} title="Bullet List">
                                     <List size={16} />
                                 </IconButton>
@@ -241,8 +751,12 @@ const TextEditorPanel = ({
                                     <ListOrdered size={16} />
                                 </IconButton>
                             </div>
+                        </div>
 
-                            <div className="toolbar-group">
+                        {/* Alignment Group */}
+                        <div className="toolbar-group-enhanced">
+                            <div className="group-label">Align</div>
+                            <div className="group-buttons">
                                 <IconButton onClick={() => execCommand('justifyLeft')} title="Align Left">
                                     <AlignLeft size={16} />
                                 </IconButton>
@@ -256,9 +770,91 @@ const TextEditorPanel = ({
                                     <AlignJustify size={16} />
                                 </IconButton>
                             </div>
+                        </div>
 
-                            <div className="toolbar-group">
-                                <IconButton onClick={onSave} title="Save">
+                        {/* Spacing Group */}
+                        <div className="toolbar-group-enhanced spacing-group">
+                            <div className="group-label">Spacing</div>
+                            <div className="spacing-controls">
+                                {/* Line Spacing */}
+                                <div className="spacing-selector-wrapper">
+                                    <div 
+                                        className="spacing-selector" 
+                                        onClick={() => {
+                                            setShowWordSpacingDropdown(false);
+                                            setShowLineSpacingDropdown(!showLineSpacingDropdown);
+                                        }}
+                                        title="Line Spacing"
+                                    >
+                                        <span className="spacing-icon">≡</span>
+                                        <span className="spacing-value">{lineSpacing}</span>
+                                        <ChevronDown size={12} />
+                                    </div>
+                                    {showLineSpacingDropdown && (
+                                        <div className="spacing-dropdown">
+                                            <div className="spacing-dropdown-header">Line Spacing</div>
+                                            {lineSpacingOptions.map(spacing => (
+                                                <div 
+                                                    key={spacing} 
+                                                    className={`spacing-option ${spacing === lineSpacing ? 'active' : ''}`}
+                                                    onClick={() => {
+                                                        setLineSpacing(spacing);
+                                                        if (editorRef.current) {
+                                                            editorRef.current.style.lineHeight = spacing;
+                                                        }
+                                                        setShowLineSpacingDropdown(false);
+                                                    }}
+                                                >
+                                                    {spacing}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Word Spacing */}
+                                <div className="spacing-selector-wrapper">
+                                    <div 
+                                        className="spacing-selector" 
+                                        onClick={() => {
+                                            setShowLineSpacingDropdown(false);
+                                            setShowWordSpacingDropdown(!showWordSpacingDropdown);
+                                        }}
+                                        title="Word Spacing"
+                                    >
+                                        <span className="spacing-icon">A⟷B</span>
+                                        <span className="spacing-value">{wordSpacing}px</span>
+                                        <ChevronDown size={12} />
+                                    </div>
+                                    {showWordSpacingDropdown && (
+                                        <div className="spacing-dropdown">
+                                            <div className="spacing-dropdown-header">Word Spacing</div>
+                                            {wordSpacingOptions.map(spacing => (
+                                                <div 
+                                                    key={spacing} 
+                                                    className={`spacing-option ${spacing === wordSpacing ? 'active' : ''}`}
+                                                    onClick={() => {
+                                                        setWordSpacing(spacing);
+                                                        if (editorRef.current) {
+                                                            editorRef.current.style.wordSpacing = `${spacing}px`;
+                                                        }
+                                                        setShowWordSpacingDropdown(false);
+                                                    }}
+                                                >
+                                                    {spacing}px
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Actions Group */}
+                        <div className="toolbar-group-enhanced">
+                            <div className="group-label">Actions</div>
+                            <div className="group-buttons">
+                                <IconButton onClick={onSave} title="Save (Ctrl+S)">
                                     <Save size={16} />
                                 </IconButton>
                                 <IconButton title="Download">
@@ -266,37 +862,59 @@ const TextEditorPanel = ({
                                 </IconButton>
                             </div>
                         </div>
-
-                        {/* Bottom Row - Status and Stats */}
-                        {/* <div className="toolbar-row-bottom">
-                            <IconButton title="Search">
-                                <Search size={16} />
-                            </IconButton>
-                            
-                            <div className="stats-display">
-                                <span>{wordCount}</span>
-                                <span>words •</span>
-                                <span>{charCount}</span>
-                                <span>chars</span>
-                            </div>
-                            
-                            <span className="save-time">
-                                {lastSaved ? `Saved ${lastSaved}` : 'Not saved yet'}
-                            </span>
-                        </div> */}
                     </div>
 
-                    {/* A4 Document Editor */}
-                    <div className="document-wrapper">
-                        <div className="a4-page">
-                            <div
-                                ref={editorRef}
-                                className="document-editor"
-                                contentEditable
-                                onInput={onContentChange}
-                                suppressContentEditableWarning={true}
-                                data-placeholder="Start writing your story..."
-                            />
+                    {/* Multi-page A4 Document Editor */}
+                    <div className="document-wrapper" ref={pagesContainerRef}>
+                        {/* Hidden master editor for external reference */}
+                        <div 
+                            ref={editorRef} 
+                            style={{ display: 'none' }}
+                            suppressContentEditableWarning={true}
+                        />
+                        
+                        {/* Rendered pages */}
+                        <div className="pages-container">
+                            {pages.map((page, index) => (
+                                <div key={page.id} className="a4-page" data-page-number={index + 1}>
+                                    <div className="page-number">Page {index + 1}</div>
+                                    <div
+                                        ref={el => pageRefs.current[index] = el}
+                                        className="document-editor"
+                                        contentEditable
+                                        onInput={() => handlePageInput(index)}
+                                        onFocus={() => { activePageRef.current = index; }}
+                                        onKeyDown={(e) => {
+                                            // Handle backspace at start of page - move to previous page
+                                            if (e.key === 'Backspace' && index > 0) {
+                                                const selection = window.getSelection();
+                                                if (selection.rangeCount > 0) {
+                                                    const range = selection.getRangeAt(0);
+                                                    if (range.startOffset === 0 && range.collapsed) {
+                                                        const prevPage = pageRefs.current[index - 1];
+                                                        if (prevPage) {
+                                                            e.preventDefault();
+                                                            // Move cursor to end of previous page
+                                                            const prevRange = document.createRange();
+                                                            prevRange.selectNodeContents(prevPage);
+                                                            prevRange.collapse(false);
+                                                            selection.removeAllRanges();
+                                                            selection.addRange(prevRange);
+                                                            prevPage.focus();
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }}
+                                        suppressContentEditableWarning={true}
+                                        data-placeholder={index === 0 ? "Start writing your story..." : ""}
+                                        style={{
+                                            lineHeight: lineSpacing,
+                                            wordSpacing: `${wordSpacing}px`
+                                        }}
+                                    />
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

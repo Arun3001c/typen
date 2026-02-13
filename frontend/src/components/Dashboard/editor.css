@@ -636,34 +636,676 @@
     margin-left: auto;
 }
 
+/* Enhanced Toolbar Styles */
+
+.toolbar-enhanced {
+    background: #fafafa;
+    border-bottom: 1px solid #e8e8e8;
+    padding: 12px 16px;
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #d0d0d0 transparent;
+}
+
+.toolbar-enhanced::-webkit-scrollbar {
+    height: 6px;
+}
+
+.toolbar-enhanced::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.toolbar-enhanced::-webkit-scrollbar-thumb {
+    background-color: #d0d0d0;
+    border-radius: 3px;
+}
+
+.toolbar-enhanced::-webkit-scrollbar-thumb:hover {
+    background-color: #b0b0b0;
+}
+
+.toolbar-group-enhanced {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #ebebeb;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.toolbar-group-enhanced:hover {
+    border-color: #ddd;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.group-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: 0.6px;
+    color: #999;
+    padding: 0 2px;
+    margin-bottom: 2px;
+}
+
+.group-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.group-buttons .icon-button {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    color: #555;
+    background: #f0f0f0;
+
+}
+
+.group-buttons .icon-button:hover {
+    background: #f0f0f0;
+    color: #1d110c;
+}
+
+.group-buttons .icon-button.active {
+    background: #fff2ee;
+    color: #ff6933;
+}
+
+/* MS Word style strikethrough icon */
+.strikethrough-icon {
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: line-through;
+    line-height: 1;
+    color: inherit;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.toolbar-separator {
+    display: none;
+}
+
+.toolbar-divider-inline {
+    width: 1px;
+    height: 18px;
+    background: #e0e0e0;
+    margin: 0 8px;
+}
+
+/* Font Group Styling */
+.font-group {
+    min-width: 200px;
+}
+
+.font-group .group-label {
+    margin-bottom: 4px;
+}
+
+.font-controls-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Font Selector Enhanced */
+.font-selector-enhanced {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #f5f5f5;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #444;
+    transition: all 0.15s ease;
+    min-width: 110px;
+}
+
+.font-selector-enhanced:hover {
+    background: #eeeeee;
+    border-color: #ddd;
+}
+
+.font-name-display {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Font Size Controls */
+.font-size-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.font-size-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 28px;
+    background: #f5f5f5;
+    border: 1px solid #e8e8e8;
+    color: #555;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.font-size-btn:first-child {
+    border-radius: 6px 0 0 6px;
+    border-right: none;
+}
+
+.font-size-btn:last-child {
+    border-radius: 0 6px 6px 0;
+    border-left: none;
+}
+
+.font-size-btn:hover {
+    background: #eeeeee;
+    color: #1d110c;
+}
+
+.font-size-btn:active {
+    background: #e5e5e5;
+}
+
+.font-size-selector {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: #ffffff;
+    border: 1px solid #e8e8e8;
+    border-left: none;
+    border-right: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: #444;
+    min-width: 45px;
+    justify-content: center;
+}
+
+.font-size-selector:hover {
+    background: #fafafa;
+}
+
+.font-size-display {
+    font-weight: 500;
+}
+
+.font-size-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    min-width: 60px;
+    animation: dropdownSlide 0.15s ease;
+}
+
+.font-size-option {
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.12s ease;
+}
+
+.font-size-option:hover {
+    background: #f5f5f5;
+}
+
+.font-size-option.active {
+    background: #fff2ee;
+    color: #ff6933;
+    font-weight: 500;
+}
+
+.font-dropdown-enhanced {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    animation: dropdownSlide 0.15s ease;
+}
+
+@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.font-option-enhanced {
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.font-option-enhanced:hover {
+    background: #f5f5f5;
+}
+
+.font-option-enhanced.active {
+    background: #fff2ee;
+    color: #ff6933;
+}
+
 /* ============================================
-   A4 DOCUMENT EDITOR
+   COLOR PICKER STYLES
+   ============================================ */
+.color-buttons {
+    gap: 4px;
+}
+
+.color-picker-wrapper {
+    position: relative;
+}
+
+.color-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 36px;
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    padding: 4px;
+    gap: 2px;
+}
+
+.color-btn:hover {
+    background: #f0f0f0;
+    color: #1d110c;
+}
+
+.color-indicator {
+    width: 16px;
+    height: 3px;
+    border-radius: 1px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.highlight-indicator {
+    border: 1px solid #ddd;
+}
+
+/* Color Palette Dropdown */
+.color-palette-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    z-index: 200;
+    padding: 12px;
+    min-width: 220px;
+    animation: dropdownSlide 0.15s ease;
+}
+
+.highlight-dropdown {
+    min-width: 180px;
+}
+
+.color-palette-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.color-palette-header span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+}
+
+.color-reset-btn {
+    font-size: 11px;
+    color: #666;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.color-reset-btn:hover {
+    background: #eee;
+    color: #333;
+}
+
+.color-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 3px;
+}
+
+.highlight-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+}
+
+.color-swatch {
+    width: 18px;
+    height: 18px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    padding: 0;
+    background: none;
+}
+
+.highlight-grid .color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+}
+
+.color-swatch:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+.color-swatch.active {
+    outline: 2px solid #ff6933;
+    outline-offset: 1px;
+}
+
+.color-swatch.no-color {
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.no-color-x {
+    color: #cc0000;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.color-palette-footer {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.custom-color-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #555;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+}
+
+.custom-color-label:hover {
+    background: #f5f5f5;
+}
+
+.custom-color-input {
+    width: 24px;
+    height: 24px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.custom-color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.custom-color-input::-webkit-color-swatch {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* ============================================
+   SPACING CONTROLS
+   ============================================ */
+.spacing-group {
+    min-width: 180px;
+}
+
+.spacing-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.spacing-selector-wrapper {
+    position: relative;
+}
+
+.spacing-selector {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 8px;
+    background: #f5f5f5;
+    border: 1px solid #e5e5e5;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #444;
+    transition: all 0.15s ease;
+    min-width: 65px;
+}
+
+.spacing-selector:hover {
+    background: #eeeeee;
+    border-color: #ddd;
+}
+
+.spacing-icon {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    line-height: 1;
+}
+
+.spacing-value {
+    flex: 1;
+    text-align: center;
+    font-weight: 500;
+}
+
+.spacing-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    z-index: 200;
+    overflow: hidden;
+    animation: dropdownSlide 0.15s ease;
+    min-width: 100px;
+}
+
+.spacing-dropdown-header {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+    padding: 8px 10px 6px;
+    border-bottom: 1px solid #f0f0f0;
+    background: #fafafa;
+}
+
+.spacing-option {
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    text-align: center;
+}
+
+.spacing-option:hover {
+    background: #f5f5f5;
+}
+
+.spacing-option.active {
+    background: #fff2ee;
+    color: #ff6933;
+    font-weight: 500;
+}
+
+/* Actions Group Special Styling */
+.toolbar-group-enhanced .group-buttons .icon-button[title="Save"],
+.toolbar-group-enhanced .group-buttons .icon-button[title="Download"] {
+    color: #ff6933;
+}
+
+.toolbar-group-enhanced .group-buttons .icon-button[title="Save"]:hover,
+.toolbar-group-enhanced .group-buttons .icon-button[title="Download"]:hover {
+    background: linear-gradient(135deg, #fff2ee 0%, #ffe8e0 100%);
+}
+
+/* ============================================
+   A4 DOCUMENT EDITOR - MULTI-PAGE SUPPORT
    ============================================ */
 .document-wrapper {
+    margin-bottom: 10px;
     flex: 1;
     overflow-y: auto;
+    overflow-x: auto;
     padding: 40px;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     background-color: #e8e8e8;
+    scrollbar-width: thin;
+    scrollbar-color: #c0c0c0 transparent;
+}
+
+.document-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.document-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.document-wrapper::-webkit-scrollbar-thumb {
+    background-color: #c0c0c0;
+    border-radius: 4px;
+}
+
+.document-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: #a0a0a0;
+}
+
+/* Center the pages when there's enough space */
+@media (min-width: 1200px) {
+    .document-wrapper {
+        justify-content: center;
+    }
+}
+
+/* Pages container - holds all A4 pages vertically */
+.pages-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    align-items: center;
 }
 
 .a4-page {
     width: 210mm;
     min-width: 210mm;
     max-width: 210mm;
+    height: 297mm;
     min-height: 297mm;
+    max-height: 297mm;
     background-color: #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border-radius: 2px;
     position: relative;
     flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 40px;
+}
+
+/* Page number indicator */
+.page-number {
+    position: absolute;
+    bottom: 10mm;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #999;
+    font-family: 'Arial', sans-serif;
+    pointer-events: none;
+    z-index: 1;
 }
 
 .document-editor {
     width: 100%;
-    min-height: 297mm;
+    flex: 1;
     padding: 25.4mm;
+    padding-bottom: 20mm;
     font-family: 'Georgia', serif;
     font-size: 12pt;
     font-weight: 400;
@@ -673,21 +1315,7 @@
     box-sizing: border-box;
     overflow-wrap: break-word;
     word-wrap: break-word;
-    /* Multi-page support - content grows naturally */
-    height: auto;
-}
-
-/* Page break visual indicator for printing */
-.document-editor {
-    background-image: 
-        linear-gradient(to bottom, 
-            transparent calc(297mm - 50.8mm - 1px), 
-            #e0e0e0 calc(297mm - 50.8mm), 
-            transparent calc(297mm - 50.8mm + 1px)
-        );
-    background-size: 100% calc(297mm - 50.8mm);
-    background-repeat: repeat-y;
-    background-position: 0 0;
+    overflow: hidden;
 }
 
 .document-editor:empty::before {
@@ -1083,6 +1711,7 @@
     border-radius: 2px;
     outline: none;
     -webkit-appearance: none;
+    appearance: none;
 }
 
 .slider-container input[type="range"]::-webkit-slider-thumb {
@@ -1258,5 +1887,56 @@
 @media (max-width: 768px) {
     .writing-ribbon {
         display: none;
+    }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+    .editor-header,
+    .toolbar-enhanced,
+    .prediction-panel,
+    .writing-ribbon,
+    .page-number {
+        display: none !important;
+    }
+    
+    .editor {
+        background: white !important;
+    }
+    
+    .panels-container {
+        display: block !important;
+    }
+    
+    .editor-panel {
+        background: white !important;
+    }
+    
+    .document-wrapper {
+        padding: 0 !important;
+        background: white !important;
+        overflow: visible !important;
+    }
+    
+    .pages-container {
+        gap: 0 !important;
+    }
+    
+    .a4-page {
+        box-shadow: none !important;
+        border: none !important;
+        page-break-after: always;
+        margin: 0 !important;
+    }
+    
+    .a4-page:last-child {
+        page-break-after: auto;
+    }
+    
+    .document-editor {
+        height: auto !important;
+        overflow: visible !important;
     }
 }
