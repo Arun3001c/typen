@@ -16,6 +16,7 @@ import {
     Sparkles, Wand2, Expand, Shrink, MessageSquare, BookOpen, Gauge,
     Focus, Eye, CheckCircle, BarChart3, Zap, AlertCircle, RefreshCw
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 import './editor.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -143,7 +144,9 @@ const TextEditorPanel = ({
     wordCount, 
     charCount,
     lastSaved,
-    onSave
+    onSave,
+    documentTitle,
+    coverImage
 }) => {
     const [fontFamily, setFontFamily] = useState('Georgia');
     const [fontSize, setFontSize] = useState(16);
@@ -474,18 +477,137 @@ const TextEditorPanel = ({
 
     const handleFontSizeChange = (size) => {
         setFontSize(size);
-        execCommand('fontSize', 7); // Use largest size first
-        // Apply actual pixel size via span styling
+
         const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            const fontElements = editorRef.current?.querySelectorAll('font[size="7"]');
-            fontElements?.forEach(el => {
-                el.removeAttribute('size');
-                el.style.fontSize = `${size}px`;
-            });
+        const activePage = pageRefs.current[activePageRef.current];
+
+        if (!selection || selection.rangeCount === 0 || !activePage) {
+            setShowFontSizeDropdown(false);
+            return;
         }
+
+        const range = selection.getRangeAt(0);
+        if (!activePage.contains(range.commonAncestorContainer)) {
+            setShowFontSizeDropdown(false);
+            return;
+        }
+
+        if (range.collapsed) {
+            const span = document.createElement('span');
+            span.style.fontSize = `${size}px`;
+            span.appendChild(document.createTextNode('\u200B'));
+
+            range.insertNode(span);
+
+            const newRange = document.createRange();
+            newRange.setStart(span.firstChild, 1);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+        } else {
+            const fragment = range.extractContents();
+            const span = document.createElement('span');
+            span.style.fontSize = `${size}px`;
+            span.appendChild(fragment);
+
+            range.insertNode(span);
+
+            const newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+        }
+
         setShowFontSizeDropdown(false);
-        editorRef.current?.focus();
+        activePage.focus();
+    };
+
+    const fetchImageDataUrl = async (src) => {
+        if (!src) return null;
+        if (src.startsWith('data:image/')) return src;
+
+        const response = await fetch(src);
+        const blob = await response.blob();
+
+        return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Failed to read image data.'));
+            reader.readAsDataURL(blob);
+        });
+    };
+
+    const loadImageElement = (src) => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Failed to load cover image.'));
+            img.src = src;
+        });
+    };
+
+    const addCoverPage = async (doc) => {
+        if (!coverImage) return;
+
+        const dataUrl = await fetchImageDataUrl(coverImage);
+        if (!dataUrl) return;
+
+        const img = await loadImageElement(dataUrl);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 36;
+        const maxWidth = pageWidth - margin * 2;
+        const maxHeight = pageHeight - margin * 2;
+
+        const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
+        const drawWidth = img.width * scale;
+        const drawHeight = img.height * scale;
+        const x = (pageWidth - drawWidth) / 2;
+        const y = (pageHeight - drawHeight) / 2;
+
+        const format = dataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(dataUrl, format, x, y, drawWidth, drawHeight);
+    };
+
+    const handleDownload = async () => {
+        const temp = document.createElement('div');
+        temp.innerHTML = content || '';
+        const text = temp.innerText || '';
+
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const margin = 48;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const maxWidth = pageWidth - margin * 2;
+        const lineHeight = 16;
+
+        try {
+            if (coverImage) {
+                await addCoverPage(doc);
+                doc.addPage();
+            }
+
+            doc.setFont('Times', '');
+            doc.setFontSize(12);
+
+            const lines = doc.splitTextToSize(text, maxWidth);
+            let y = margin;
+
+            lines.forEach((line) => {
+                if (y + lineHeight > pageHeight - margin) {
+                    doc.addPage();
+                    y = margin;
+                }
+                doc.text(line, margin, y);
+                y += lineHeight;
+            });
+        } catch (error) {
+            console.error('PDF export failed:', error);
+        }
+
+        const baseName = (documentTitle || 'document').trim();
+        const safeName = baseName.replace(/[\\/:*?"<>|]/g, '_');
+        doc.save(`${safeName || 'document'}.pdf`);
     };
 
     const increaseFontSize = () => {
@@ -857,7 +979,7 @@ const TextEditorPanel = ({
                                 <IconButton onClick={onSave} title="Save (Ctrl+S)">
                                     <Save size={16} />
                                 </IconButton>
-                                <IconButton title="Download">
+                                <IconButton onClick={handleDownload} title="Download">
                                     <Download size={16} />
                                 </IconButton>
                             </div>
@@ -1499,6 +1621,8 @@ const Editor = () => {
                     charCount={charCount}
                     lastSaved={lastSaved}
                     onSave={() => saveBook(false)}
+                    documentTitle={book?.title}
+                    coverImage={book?.coverImage}
                 />
             </div>
         </div>

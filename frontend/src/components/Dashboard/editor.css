@@ -184,8 +184,8 @@
    WORD PREDICTION PANEL (LEFT)
    ============================================ */
 .prediction-panel {
-    width: 280px;
-    min-width: 280px;
+    width: 200px;
+    min-width: 260px;
     background-color: #ffffff;
     border-right: 1px solid #e0e0e0;
     display: flex;
@@ -454,21 +454,21 @@
     display: flex;
     flex-direction: column;
     background-color: #e8e8e8;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .editor-container {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .editor-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* ============================================
@@ -645,10 +645,13 @@
     display: flex;
     align-items: stretch;
     gap: 12px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    overflow-y: visible;
     scrollbar-width: thin;
     scrollbar-color: #d0d0d0 transparent;
+    position: relative;
+    z-index: 60;
 }
 
 .toolbar-enhanced::-webkit-scrollbar {
@@ -867,6 +870,9 @@
     overflow-y: auto;
     min-width: 60px;
     animation: dropdownSlide 0.15s ease;
+    scrollbar-width: thin;
+    scrollbar-color: #c9c3bf transparent;
+    overscroll-behavior: contain;
 }
 
 .font-size-option {
@@ -900,6 +906,9 @@
     max-height: 200px;
     overflow-y: auto;
     animation: dropdownSlide 0.15s ease;
+    scrollbar-width: thin;
+    scrollbar-color: #c9c3bf transparent;
+    overscroll-behavior: contain;
 }
 
 @keyframes dropdownSlide {
@@ -987,6 +996,38 @@
     padding: 12px;
     min-width: 220px;
     animation: dropdownSlide 0.15s ease;
+    max-height: 260px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #c9c3bf transparent;
+    overscroll-behavior: contain;
+}
+
+.font-dropdown-enhanced::-webkit-scrollbar,
+.font-size-dropdown::-webkit-scrollbar,
+.color-palette-dropdown::-webkit-scrollbar {
+    width: 8px;
+}
+
+.font-dropdown-enhanced::-webkit-scrollbar-track,
+.font-size-dropdown::-webkit-scrollbar-track,
+.color-palette-dropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.font-dropdown-enhanced::-webkit-scrollbar-thumb,
+.font-size-dropdown::-webkit-scrollbar-thumb,
+.color-palette-dropdown::-webkit-scrollbar-thumb {
+    background: #d3cdca;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+.font-dropdown-enhanced::-webkit-scrollbar-thumb:hover,
+.font-size-dropdown::-webkit-scrollbar-thumb:hover,
+.color-palette-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #bfb7b2;
 }
 
 .highlight-dropdown {
