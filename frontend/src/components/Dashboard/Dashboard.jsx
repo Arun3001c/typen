@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import { useLoading, LOADER_TYPES } from '../../context/LoadingContext';
 import { Loading } from '../loading';
-import { X, Image, Edit2, Trash2, MoreVertical, Star } from 'lucide-react';
+import { X, Image, Edit2, Trash2, MoreVertical, Star, Mail, LogOut } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -218,11 +218,18 @@ const Dashboard = () => {
     const [openMenuId, setOpenMenuId] = useState(null);
     const menuRef = useRef(null);
 
+    // State for settings menu dropdown
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const settingsMenuRef = useRef(null);
+
     // Close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
                 setOpenMenuId(null);
+            }
+            if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
+                setIsSettingsOpen(false);
             }
         };
 
@@ -293,6 +300,10 @@ const Dashboard = () => {
         await signOut();
         hideLoader();
         navigate('/');
+    };
+
+    const handleToggleSettings = () => {
+        setIsSettingsOpen((prev) => !prev);
     };
 
     // Handle new document creation
@@ -657,10 +668,36 @@ const Dashboard = () => {
                     <span className="nav-icon">✨</span>
                     <span className="nav-label">AI Assistant</span>
                 </button> */}
-                <button className="nav-item" onClick={handleSignOut}>
-                    <span className="nav-icon">⚙️</span>
-                    <span className="nav-label">Settings</span>
-                </button>
+                <div className="settings-menu-wrapper" ref={settingsMenuRef}>
+                    <button className="nav-item" onClick={handleToggleSettings}>
+                        <span className="nav-icon">⚙️</span>
+                        <span className="nav-label">Settings</span>
+                    </button>
+                    {isSettingsOpen && (
+                        <div className="settings-menu-dropdown">
+                            <button
+                                className="menu-option"
+                                onClick={() => {
+                                    setIsSettingsOpen(false);
+                                    navigate('/contact');
+                                }}
+                            >
+                                <Mail size={16} />
+                                <span>Contact</span>
+                            </button>
+                            <button
+                                className="menu-option menu-option-danger"
+                                onClick={() => {
+                                    setIsSettingsOpen(false);
+                                    handleSignOut();
+                                }}
+                            >
+                                <LogOut size={16} />
+                                <span>Log Out</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
             </nav>
 
             {/* Floating Action Button */}

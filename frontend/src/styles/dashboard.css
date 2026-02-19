@@ -453,6 +453,27 @@
     font-family: 'Newsreader', serif;
 }
 
+.settings-menu-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-menu-dropdown {
+    position: absolute;
+    bottom: 56px;
+    right: 0;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+    min-width: 170px;
+    overflow: hidden;
+    z-index: 30;
+    animation: dropdownFadeIn 0.15s ease;
+    border: 1px solid #ead5cd;
+}
+
 /* ==================== FLOATING ACTION BUTTON ==================== */
 .fab {
     position: fixed;

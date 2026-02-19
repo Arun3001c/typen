@@ -17,6 +17,7 @@ const Login = lazy(() => import('./components/Login'));
 const Dashboard = lazy(() => import('./components/Dashboard/Dashboard'));
 const Editor = lazy(() => import('./components/Dashboard/Editor'));
 const Profile = lazy(() => import('./components/Dashboard/profile'));
+const Contact = lazy(() => import('./components/Contact'));
 
 /**
  * RouteChangeHandler Component
@@ -68,6 +69,9 @@ const AppRoutes = () => {
 
                     {/* Profile - Protected route (after login) */}
                     <Route path="/profile" element={<Profile />} />
+
+                    {/* Contact Page */}
+                    <Route path="/contact" element={<Contact />} />
                 </Routes>
             </RouteChangeHandler>
         </Suspense>

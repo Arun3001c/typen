@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import '../styles/landingpage.css';
 
 // Icons as React components
@@ -229,15 +229,15 @@ const Footer = () => {
           </div>
           
           <div className="footer-links">
-            <a href="#" className="footer-link">
+            {/* <a href="#" className="footer-link">
               Privacy
             </a>
             <a href="#" className="footer-link">
               Terms
-            </a>
-            <a href="#" className="footer-link">
-              Contact
-            </a>
+            </a> */}
+            <Link to="/contact" className="footer-link">
+              Contact for support or feedback
+            </Link>
             
           </div>
         </div>

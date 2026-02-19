@@ -5,6 +5,7 @@ Handles user registration with MongoDB and Clerk authentication
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_mail import Mail, Message
 from pymongo import MongoClient
 from bson import ObjectId
 from datetime import datetime, timezone
@@ -21,6 +22,17 @@ app = Flask(__name__)
 
 # Enable CORS to allow frontend requests from React app
 CORS(app, origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"])
+
+# Flask-Mail configuration
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME'))
+
+mail = Mail(app)
 
 # MongoDB connection using environment variable
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
@@ -57,6 +69,104 @@ def home():
         "status": "success",
         "message": "Next Word Prediction API is running!"
     })
+
+
+@app.route("/api/contact", methods=["POST"])
+def send_contact_email():
+    """
+    Send contact form email to admin
+    Receives form data and sends email notification
+    """
+    try:
+        # Get form data from request
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "No data provided"
+            }), 400
+        
+        name = data.get("name")
+        email = data.get("email")
+        phone = data.get("phone")
+        subject = data.get("subject")
+        message = data.get("message")
+        
+        # Check if all required fields are present
+        if not all([name, email, phone, subject, message]):
+            return jsonify({
+                "status": "error",
+                "message": "All fields are required"
+            }), 400
+        
+        # Create email message
+        msg = Message(
+            subject=f"Contact Form: {subject}",
+            recipients=["arunk330840@gmail.com"],
+            reply_to=email
+        )
+        
+        # Email body
+        msg.body = f"""
+New Contact Form Submission from Typen
+
+Name: {name}
+Email: {email}
+Phone: {phone}
+Subject: {subject}
+
+Message:
+{message}
+
+---
+This message was sent from the Typen contact form.
+        """
+        
+        msg.html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+                <h2 style="color: #4F46E5; border-bottom: 2px solid #4F46E5; padding-bottom: 10px;">
+                    New Contact Form Submission from Typen
+                </h2>
+                
+                <div style="margin: 20px 0;">
+                    <p><strong>Name:</strong> {name}</p>
+                    <p><strong>Email:</strong> <a href="mailto:{email}">{email}</a></p>
+                    <p><strong>Phone:</strong> {phone}</p>
+                    <p><strong>Subject:</strong> {subject}</p>
+                </div>
+                
+                <div style="background-color: #f9fafb; padding: 15px; border-left: 4px solid #4F46E5; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #4F46E5;">Message:</h3>
+                    <p style="white-space: pre-wrap;">{message}</p>
+                </div>
+                
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="color: #666; font-size: 12px;">
+                    This message was sent from the Typen contact form.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Send email
+        mail.send(msg)
+        
+        return jsonify({
+            "status": "success",
+            "message": "Email sent successfully"
+        }), 200
+        
+    except Exception as e:
+        print(f"Error sending contact email: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to send email: {str(e)}"
+        }), 500
 
 
 @app.route("/api/users/register", methods=["POST"])
