@@ -40,7 +40,11 @@ const WordPredictionPanel = ({
     isLoading = false,
     isCollapsed,
     onToggleCollapse,
-    onRegenerate
+    onRegenerate,
+    wordCount,
+    charCount,
+    lastSaved,
+    autoSaveStatus
 }) => {
     // Separate probable and creative predictions
     const probablePredictions = predictions.filter(p => p.type === 'probable' || !p.type);
@@ -72,6 +76,28 @@ const WordPredictionPanel = ({
 
             <div className="panel-container">
                 <div className="panel-content">
+                    {/* Document Stats Section */}
+                    <div className="prediction-section">
+                        <div className="section-header">
+                            <FileText size={14} />
+                            <span>Document Stats</span>
+                        </div>
+                        <div className="stats-grid">
+                            <div className="stat-item">
+                                <span className="stat-value">{wordCount}</span>
+                                <span className="stat-label">Words</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-value">{charCount}</span>
+                                <span className="stat-label">Chars</span>
+                            </div>
+                        </div>
+                        <div className="saved-time-row">
+                            <CheckCircle size={12} className={autoSaveStatus === 'saved' ? 'saved' : ''} />
+                            <span className="saved-label">Last saved:</span>
+                            <span className="saved-value">{lastSaved || 'Not saved'}</span>
+                        </div>
+                    </div>
                     {/* Probable Words Section */}
                     <div className="prediction-section">
                         <div className="section-header">
@@ -104,7 +130,7 @@ const WordPredictionPanel = ({
                     </div>
 
                     {/* Creative Words Section */}
-                    {!isLoading && creativePredictions.length > 0 && (
+                    {/* {!isLoading && creativePredictions.length > 0 && (
                         <div className="prediction-section creative-section">
                             <div className="section-header">
                                 <Sparkles size={14} />
@@ -129,7 +155,7 @@ const WordPredictionPanel = ({
                                 ))}
                             </div>
                         </div>
-                    )}
+                    )} */}
                 </div>
             </div>
         </div>
@@ -176,29 +202,10 @@ const TextEditorPanel = ({
     const lineSpacingOptions = [1, 1.15, 1.5, 2, 2.5, 3];
     const wordSpacingOptions = [0, 1, 2, 3, 4, 5, 6, 8, 10];
     
-    // Cleanup empty pages on mount
+    // Cleanup empty pages on mount - keep only single page
     useEffect(() => {
-        const cleanupTimer = setTimeout(() => {
-            setPages(currentPages => {
-                if (currentPages.length <= 1) return currentPages;
-                
-                // Filter out empty trailing pages
-                const nonEmptyPages = [];
-                for (let i = 0; i < currentPages.length; i++) {
-                    const pageRef = pageRefs.current[i];
-                    if (pageRef && pageRef.innerText.trim().length > 0) {
-                        nonEmptyPages.push(currentPages[i]);
-                    } else if (i === 0) {
-                        // Always keep the first page
-                        nonEmptyPages.push(currentPages[i]);
-                    }
-                }
-                
-                return nonEmptyPages.length > 0 ? nonEmptyPages : [{ id: 1, content: '' }];
-            });
-        }, 100);
-        
-        return () => clearTimeout(cleanupTimer);
+        // Always keep single page
+        setPages([{ id: 1, content: '' }]);
     }, []);
     
     // Save and restore cursor position
@@ -273,83 +280,33 @@ const TextEditorPanel = ({
         selection.addRange(range);
     };
     
-    // Check and handle pagination
+    // Pagination disabled - keep single page
     const handlePagination = useCallback(() => {
-        if (isPaginatingRef.current) return;
-        isPaginatingRef.current = true;
-        
-        requestAnimationFrame(() => {
-            const newPages = [...pages];
-            let pagesChanged = false;
-            
-            // Check each page for overflow
-            for (let i = 0; i < pageRefs.current.length; i++) {
-                const pageEditor = pageRefs.current[i];
-                if (!pageEditor) continue;
-                
-                // Skip if editor is empty or has no real content
-                const hasContent = pageEditor.innerText.trim().length > 0;
-                if (!hasContent) continue;
-                
-                // Check if content actually overflows (with small threshold to avoid false positives)
-                const overflowThreshold = 5; // pixels
-                const isOverflowing = pageEditor.scrollHeight > (pageEditor.clientHeight + overflowThreshold);
-                
-                // If content overflows current page
-                if (isOverflowing) {
-                    // Create a new page if needed
-                    if (i === newPages.length - 1) {
-                        newPages.push({ id: Date.now(), content: '' });
-                        pagesChanged = true;
-                    }
-                    
-                    // Move overflow content to next page
-                    const overflowContent = extractOverflowContent(pageEditor, pageEditor.clientHeight);
-                    if (overflowContent && pageRefs.current[i + 1]) {
-                        prependContent(pageRefs.current[i + 1], overflowContent);
-                    }
-                }
-            }
-            
-            // Remove empty trailing pages (keep at least one)
-            while (newPages.length > 1) {
-                const lastPageRef = pageRefs.current[newPages.length - 1];
-                if (lastPageRef && lastPageRef.innerHTML.trim() === '' && 
-                    lastPageRef.innerText.trim() === '') {
-                    newPages.pop();
-                    pagesChanged = true;
-                } else {
-                    break;
-                }
-            }
-            
-            if (pagesChanged) {
-                setPages(newPages);
-            }
-            
-            isPaginatingRef.current = false;
-        });
-    }, [pages]);
+        // Do nothing - single page mode
+        return;
+    }, []);
     
-    // Extract content that overflows beyond maxHeight
+    // Extract content that overflows beyond maxHeight - intelligently finds the split point
     const extractOverflowContent = (editor, maxHeight) => {
         const children = Array.from(editor.childNodes);
-        let accumulatedHeight = 0;
         let overflowStartIndex = -1;
         
-        // Create a temporary measuring element
+        // Create a temporary measuring element with identical styles to calculate proper heights
         const measurer = document.createElement('div');
         measurer.style.cssText = window.getComputedStyle(editor).cssText;
         measurer.style.position = 'absolute';
         measurer.style.visibility = 'hidden';
         measurer.style.height = 'auto';
         measurer.style.width = editor.offsetWidth + 'px';
+        measurer.style.pointerEvents = 'none';
         document.body.appendChild(measurer);
         
+        // Find exact point where content exceeds max height
         for (let i = 0; i < children.length; i++) {
             const child = children[i].cloneNode(true);
             measurer.appendChild(child);
             
+            // If adding this element causes overflow, it's the start of overflow
             if (measurer.scrollHeight > maxHeight) {
                 overflowStartIndex = i;
                 break;
@@ -358,9 +315,10 @@ const TextEditorPanel = ({
         
         document.body.removeChild(measurer);
         
+        // If no overflow detected, return null
         if (overflowStartIndex === -1) return null;
         
-        // Extract overflow nodes
+        // Extract all nodes from overflow start index onwards
         const fragment = document.createDocumentFragment();
         for (let i = children.length - 1; i >= overflowStartIndex; i--) {
             fragment.insertBefore(children[i], fragment.firstChild);
@@ -382,25 +340,13 @@ const TextEditorPanel = ({
     const handlePageInput = (pageIndex) => {
         // Sync content to the main editorRef for external access
         if (pageRefs.current[0]) {
-            // Collect all pages content
-            const allContent = pageRefs.current
-                .filter(ref => ref)
-                .map(ref => ref.innerHTML)
-                .join('<!-- page-break -->');
-            
-            // Update the hidden master ref if it exists
+            // For single page, just update the ref
             if (editorRef.current) {
-                editorRef.current.innerHTML = allContent;
+                editorRef.current.innerHTML = pageRefs.current[0].innerHTML;
             }
         }
         
         onContentChange();
-        
-        // Only run pagination if there's actual content
-        const currentPage = pageRefs.current[pageIndex];
-        if (currentPage && currentPage.innerText.trim().length > 0) {
-            handlePagination();
-        }
     };
     
     // Initialize first page with existing content
@@ -999,7 +945,6 @@ const TextEditorPanel = ({
                         <div className="pages-container">
                             {pages.map((page, index) => (
                                 <div key={page.id} className="a4-page" data-page-number={index + 1}>
-                                    <div className="page-number">Page {index + 1}</div>
                                     <div
                                         ref={el => pageRefs.current[index] = el}
                                         className="document-editor"
@@ -1119,29 +1064,6 @@ const WritingRibbon = ({
             </div>
 
             <div className="ribbon-content">
-                {/* Writing Stats Section */}
-                <div className="ribbon-section">
-                    <div className="section-header">
-                        <FileText size={14} />
-                        <span>Document Stats</span>
-                    </div>
-                    <div className="stats-grid">
-                        <div className="stat-item">
-                            <span className="stat-value">{wordCount}</span>
-                            <span className="stat-label">Words</span>
-                        </div>
-                        <div className="stat-item">
-                            <span className="stat-value">{charCount}</span>
-                            <span className="stat-label">Chars</span>
-                        </div>
-                    </div>
-                    <div className="saved-time-row">
-                        <CheckCircle size={12} className={autoSaveStatus === 'saved' ? 'saved' : ''} />
-                        <span className="saved-label">Last saved:</span>
-                        <span className="saved-value">{lastSaved || 'Not saved'}</span>
-                    </div>
-                </div>
-
                 {/* AI Assistance Section */}
                 {/* <div className="ribbon-section">
                     <div className="section-header">
@@ -1390,13 +1312,27 @@ const Editor = () => {
         }
     };
 
+    // const updateCounts = (text) => {
+    //     const plainText = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    //     const words = plainText ? plainText.split(/\s+/).length : 0;
+    //     const chars = plainText.length;
+    //     setWordCount(words);
+    //     setCharCount(chars);
+    // };
     const updateCounts = (text) => {
-        const plainText = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-        const words = plainText ? plainText.split(/\s+/).length : 0;
-        const chars = plainText.length;
-        setWordCount(words);
-        setCharCount(chars);
-    };
+    const temp = document.createElement('div');
+    temp.innerHTML = text;
+
+    const plainText = temp.textContent || '';
+
+    const cleaned = plainText.replace(/\s+/g, ' ').trim();
+
+    const words = cleaned ? cleaned.split(' ').length : 0;
+    const chars = cleaned.length;
+
+    setWordCount(words);
+    setCharCount(chars);
+};
 
     // Fetch predictions from Cohere API
     const fetchPredictions = async (text) => {
@@ -1581,15 +1517,15 @@ const Editor = () => {
                         <Save size={18} />
                         <span>{isSaving ? 'Saving...' : 'Save'}</span>
                     </button>
-                    <button className="editor-menu-btn">
+                    {/* <button className="editor-menu-btn">
                         <MoreVertical size={20} />
-                    </button>
+                    </button> */}
                 </div>
             </header>
 
             {/* Two Panel Layout */}
             <div className="panels-container">
-                <WritingRibbon
+                {/* <WritingRibbon
                     isCollapsed={isRibbonCollapsed}
                     onToggleCollapse={() => setIsRibbonCollapsed(!isRibbonCollapsed)}
                     wordCount={wordCount}
@@ -1604,7 +1540,7 @@ const Editor = () => {
                     autoSaveStatus={autoSaveStatus}
                     onAIAction={handleAIAction}
                     lastSaved={lastSaved}
-                />
+                /> */}
                 <WordPredictionPanel 
                     onWordClick={insertWordAtCursor}
                     predictions={predictions}
@@ -1612,6 +1548,10 @@ const Editor = () => {
                     isCollapsed={isPredictionCollapsed}
                     onToggleCollapse={() => setIsPredictionCollapsed(!isPredictionCollapsed)}
                     onRegenerate={() => handleAIAction('regenerate')}
+                    wordCount={wordCount}
+                    charCount={charCount}
+                    lastSaved={lastSaved}
+                    autoSaveStatus={autoSaveStatus}
                 />
                 <TextEditorPanel 
                     editorRef={editorRef}

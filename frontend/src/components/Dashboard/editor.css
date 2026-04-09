@@ -454,21 +454,24 @@
     display: flex;
     flex-direction: column;
     background-color: #e8e8e8;
-    overflow: visible;
+    overflow: hidden;
+    min-height: 0;
 }
 
 .editor-container {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: visible;
+    overflow: hidden;
+    min-height: 0;
 }
 
 .editor-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: visible;
+    overflow: hidden;
+    min-height: 0;
 }
 
 /* ============================================
@@ -1266,34 +1269,46 @@
    A4 DOCUMENT EDITOR - MULTI-PAGE SUPPORT
    ============================================ */
 .document-wrapper {
-    margin-bottom: 10px;
+    margin-bottom: 0;
     flex: 1;
     overflow-y: auto;
     overflow-x: auto;
+    overflow-y: overlay;
     padding: 40px;
     display: flex;
     justify-content: flex-start;
     background-color: #e8e8e8;
     scrollbar-width: thin;
-    scrollbar-color: #c0c0c0 transparent;
+    scrollbar-color: #999 #f5f5f5;
+    scroll-behavior: smooth;
+    min-height: 0;
 }
 
 .document-wrapper::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
 }
 
 .document-wrapper::-webkit-scrollbar-track {
-    background: transparent;
+    background: #e8e8e8;
+    border-radius: 8px;
 }
 
 .document-wrapper::-webkit-scrollbar-thumb {
-    background-color: #c0c0c0;
-    border-radius: 4px;
+    background-color: #999;
+    border-radius: 8px;
+    border: 2px solid #e8e8e8;
+    background-clip: content-box;
 }
 
 .document-wrapper::-webkit-scrollbar-thumb:hover {
-    background-color: #a0a0a0;
+    background-color: #666;
+    border: 2px solid #e8e8e8;
+    background-clip: content-box;
+}
+
+.document-wrapper::-webkit-scrollbar-corner {
+    background: #e8e8e8;
 }
 
 /* Center the pages when there's enough space */
@@ -1309,6 +1324,8 @@
     flex-direction: column;
     gap: 30px;
     align-items: center;
+    width: 100%;
+    padding: 10px 0;
 }
 
 .a4-page {
@@ -1356,7 +1373,27 @@
     box-sizing: border-box;
     overflow-wrap: break-word;
     word-wrap: break-word;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc transparent;
+}
+
+.document-editor::-webkit-scrollbar {
+    width: 8px;
+}
+
+.document-editor::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.document-editor::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 4px;
+}
+
+.document-editor::-webkit-scrollbar-thumb:hover {
+    background-color: #999;
 }
 
 .document-editor:empty::before {
@@ -1411,6 +1448,7 @@
     
     .document-wrapper {
         padding: 20px;
+        overflow-x: hidden;
     }
     
     .document-editor {

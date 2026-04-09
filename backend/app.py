@@ -667,9 +667,9 @@ lowercase only, no punctuation, no explanation"""
 
 # Run the Flask app
 if __name__ == "__main__":
-    # Get port from environment or default to 5000
-    PORT = int(os.getenv("PORT", 5000))
-    DEBUG = os.getenv("FLASK_DEBUG", "True").lower() == "true"
+    # Get port from environment or default to 10000
+    PORT = int(os.getenv("PORT", 10000))
+    DEBUG = os.getenv("FLASK_DEBUG", "False").lower() == "true"
     
     print(f"🚀 Starting Flask server on port {PORT}")
     app.run(host="0.0.0.0", port=PORT, debug=DEBUG)

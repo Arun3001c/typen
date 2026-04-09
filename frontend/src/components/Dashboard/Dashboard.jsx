@@ -660,10 +660,10 @@ const Dashboard = () => {
                     <span className="nav-icon">📄</span>
                     <span className="nav-label">Library</span>
                 </button>
-                <button className="nav-item" onClick={() => navigate('/editor')}>
+                {/* <button className="nav-item" onClick={() => navigate('/editor')}>
                     <span className="nav-icon">✏️</span>
                     <span className="nav-label">Writing Lab</span>
-                </button>
+                </button> */}
                 {/* <button className="nav-item">
                     <span className="nav-icon">✨</span>
                     <span className="nav-label">AI Assistant</span>
